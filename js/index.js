@@ -40,6 +40,7 @@ class QuickPlayer {
 			paging: false,
 			destroy: true,
 			deferRender: true,
+			fixedHeader: true,
 			sDom: '<"search-box"r>lftip',
 			columnDefs: [
 				{ responsivePriority: 1, targets: 2 },
@@ -246,6 +247,16 @@ class QuickPlayer {
 				return;
 			}
 			this.setProgressPercentage();
+			this.detectProgressMove();
+		});
+	}
+
+	detectProgressMove() {
+		const pbar = document.querySelector("#playerProgress");
+		$('div.progress').on('click', e => {
+			const ctime = this.player.duration * (e.offsetX / e.currentTarget.offsetWidth);
+			console.log(e, ctime);
+			this.player.currentTime = ctime;
 		});
 	}
 
@@ -260,7 +271,7 @@ class QuickPlayer {
 		$pbar.attr("style", `width: ${pct}%`);
 		$pbar.attr("arial-valuenow", pct);
 		$("#progressStat").text(`${this.makeTimeInfo(this.player.currentTime)} / ${this.makeTimeInfo(this.player.duration)} (${pct}%)`);
-	}	
+	}
 
 	renderCast(cast, $md) {
 		const header = `<div class="media">
@@ -288,7 +299,11 @@ class QuickPlayer {
 					},
 					{
 						"data": "pubDate",
-						"title": "published"
+						"title": "published",
+						"render": function(val, typ, row, meta) {
+							const dat = moment(val);
+							return `<span style='display:none'>${dat.valueOf()}</span>${moment(val).fromNow()}`;
+						}
 					}
 				],
 				order: [1, 'desc']
@@ -309,6 +324,9 @@ class QuickPlayer {
 	}
 
 	playEpisode(cast, ep) {
+		if (this.player != null && !this.player.paused) {
+			this.player.pause();
+		}
 		document.querySelector("#player").src = ep.mediaURL;
 		$('#ep-title').text(this.stringCut(ep.title, 30));
 		$('#ep-title').attr('title', ep.title);
