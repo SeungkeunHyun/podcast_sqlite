@@ -1,0 +1,14 @@
+
+    .container {
+        padding-top: 10px;
+        padding-bottom: 100px;
+    }
+
+    a[role=option] {
+        color: #000!important;
+    }
+	
+	table.dataTable {
+		border-collapse:collapse;
+		width: 100%
+	}
