@@ -302,7 +302,7 @@ class QuickPlayer {
 						"title": "published",
 						"render": function(val, typ, row, meta) {
 							const dat = moment(val);
-							return `<span style='display:none'>${dat.valueOf()}</span>${moment(val).fromNow()}`;
+							return `<span style='display:none'>${dat.valueOf()}</span><span title='${val}'>${moment(val).fromNow()}</span>`;
 						}
 					}
 				],
