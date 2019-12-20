@@ -6,6 +6,7 @@ class QuickPlayer {
 	player = null;
 	casts = [];
 	updatedCasts = [];
+	htmlCache = {};
 	static storeKey = 'qpBookmarks';
 	herokuFetcher = 'https://phpfetch.herokuapp.com/fetchURL.php';
 	constructor() {
@@ -26,7 +27,12 @@ class QuickPlayer {
 		}).catch(ex => {
 			console.error(ex);
 		});
-		this.initBookmarks();
+		$("#po-bookmarks").on('click', (e) => {
+			this.renderBookmarks($('#popCast'));
+		});
+		$("#popCast").on('hidden.bs.modal', function () {
+			$(this).data('bs.modal', null);
+		});
 	}
 
 	initBookmarks() {
@@ -142,7 +148,7 @@ class QuickPlayer {
 	fetchEpisodes() {
 		this.casts.forEach( async(c) => {
 			const fetchURL = this.getFetchURL(c);
-			console.log(c, c.feedURL);
+			//console.log(c, c.feedURL);
 			const data = await $.ajax({
 				url: this.herokuFetcher, 
 				data: {uri: fetchURL },
@@ -168,7 +174,7 @@ class QuickPlayer {
 					});
 					res = await res.json();
 					if(res.hasOwnProperty('error') || res.responseText.indexOf('Warning') > -1) {
-						console.error('error in posting', res, itm);
+						//console.error('error in posting', res, itm);
 						if(episodes.length > 15) {
 							break;
 						}
@@ -180,7 +186,7 @@ class QuickPlayer {
 					console.error(itm, res.responseText);
 					break;
 				}
-				console.log(c.provider, episodes);
+				//console.log(c.provider, episodes);
 			}
 		});
 	}
@@ -248,10 +254,8 @@ class QuickPlayer {
 		this.player = document.getElementById('player');
 		$('#playerButtons i').on('click', e => {
 			const btn = e.currentTarget.querySelector('svg');
-			console.log(btn);
+			//console.log(btn);
 			if (btn.classList.contains('fa-play')) {
-				btn.classList.remove('fa-play');
-				btn.classList.add('fa-pause');
 				this.player.play();
 				return;
 			}
@@ -264,59 +268,66 @@ class QuickPlayer {
 				return;
 			}
 			if (btn.classList.contains('fa-pause')) {
-				btn.classList.remove('fa-pause');
-				btn.classList.add('fa-play');
 				this.player.pause();
 				return;
 			}
 		});
-		/*
-		this.player.addEventListener('play', e => {
-			console.log(e);
-		});
-		this.player.addEventListener('abort', e => {
-		});
-		*/
-		this.player.addEventListener('pause', e => {
-			this.recordCurrent();
-		});
+		this.player.onplay = e => {
+			QuickPlayer.iconToggle(true);
+		};
+		this.player.onabort= e => {
+			QuickPlayer.iconToggle(false);
+		};
+		this.player.onpause = e => {
+			QuickPlayer.iconToggle(false);
+			this.recordCurrent(true);
+		};
+		this.player.onended = e => {
+			QuickPlayer.iconToggle(false);
+			this.recordCurrent(false);
+		}
 
-		this.player.addEventListener('loadedmetadata', e => {
-			if(localStorage.getItem(QuickPlayer.storeKey)) {
-				const qpb = JSON.parse(localStorage.getItem(QuickPlayer.storeKey));
-				if(qpb.hasOwnProperty(this.player.src)) {
-					this.player.currentTime = qpb[this.player.src].currentTime;
-				}
-			}
-		});
-
-		this.player.addEventListener('timeupdate', e=> {
+		this.player.ontimeupdate = e=> {
 			if(isNaN(this.player.duration)) {
 				return;
 			}
 			if(parseInt(this.player.currentTime) % 10 == 0) {
-				this.recordCurrent();
+				this.recordCurrent(true);
 			}
 			this.setProgressPercentage();
 			this.detectProgressMove();
-		});
+		};
 	}
 
-	recordCurrent() {
-		const rec = {
-			title: $('#ep-title').attr('title'),
-			image: $('#ep-image').attr('src'),
-			cast: $('#ep-image').attr('title'),
-			mediaURL: $('#player').attr('src'),
-			currentTime: document.querySelector('#player').currentTime,
-			recordedAt: new Date().getTime()
-		};
-		let qpb = {};
-		if (localStorage.getItem(QuickPlayer.storeKey)) {
-			qpb = JSON.parse(localStorage.getItem(QuickPlayer.storeKey));
+	static iconToggle(isPlaying) {
+		let $btn = isPlaying ? $("i svg.fa-play") : $("i svg.fa-pause");
+		//console.log(isPlaying, $btn);
+		if ($btn.length) {
+			$btn.removeClass(isPlaying ? "fa-play" : "fa-pause");
+			$btn.addClass(isPlaying ? "fa-pause" :"fa-play");
+		}
+	}
+
+	recordCurrent(toRecord) {
+		let qpb = QuickPlayer.getBookmarks();
+		if(!qpb) {
+			qpb = {};
+		}
+		const mediaSrc = $('#player').attr('src');
+		if(toRecord) {
+			const rec = {
+				title: $('#ep-title').attr('title'),
+				image: $('#ep-image').attr('src'),
+				cast: $('#ep-image').attr('title'),
+				mediaURL: mediaSrc,
+				currentTime: document.querySelector('#player').currentTime,
+				recordedAt: new Date().getTime()
+			};
 			qpb[rec.mediaURL] = rec;
 		} else {
-			qpb[rec.mediaURL] = rec;
+			if (qpb.hasOwnProperty(mediaSrc)) {
+				delete qpb[mediaSrc];
+			}
 		}
 		localStorage.setItem(QuickPlayer.storeKey, JSON.stringify(qpb));
 	}
@@ -325,7 +336,6 @@ class QuickPlayer {
 		const pbar = document.querySelector("#playerProgress");
 		$('div.progress').on('click', e => {
 			const ctime = this.player.duration * (e.offsetX / e.currentTarget.offsetWidth);
-			console.log(e, ctime);
 			this.player.currentTime = ctime;
 		});
 	}
@@ -343,7 +353,9 @@ class QuickPlayer {
 		$("#progressStat").text(`${QuickPlayer.makeTimeInfo(this.player.currentTime)} / ${QuickPlayer.makeTimeInfo(this.player.duration)} (${pct}%)`);
 	}
 
-	renderCast(cast, $md) {
+	async renderCast(cast, $md) {
+		const modal_html = await this.loadHTML('components/modal_episodes.html');
+		$md.html(modal_html);
 		const header = `<div class="media">
                             <div class="media-left"><img src="${cast.imageURL}" class="media-object rounded" width="60px"></div>
 							<div class="media-body p-3"><h5 class="media-heading">${cast.name} <span class="badge badge-info">${cast.episodes}</span></h5>
@@ -397,6 +409,85 @@ class QuickPlayer {
 		$md.modal('show');
 	}
 
+	async renderBookmarks($md) {
+		let bookmarks = QuickPlayer.getBookmarks();
+		if(bookmarks == null) {
+			return;
+		}
+		let eps = [];
+		for(let k in bookmarks) {
+			eps.push(bookmarks[k]);
+		}
+		eps.sort((a,b) => b.recordedAt - a.recordedAt);
+		const modal_html = await this.loadHTML('components/modal_bookmarks.html');
+		$md.html(modal_html);
+		//console.log(eps);
+		let $dtab = $('#tabEpisodes').DataTable({
+			data: eps,
+			destroy: true,
+			responsive: true,
+			processing: true,
+			autoWidth: true,
+			columns: [
+				{
+					data: "cast",
+					title: "cast",
+					render: (v, t, r, m) => {
+						return `<img src='${r.image}' width='40' alt='${r.cast}' class='rounded'>`;
+					}
+				},
+				{
+					data: "title",
+					title: "title",
+					render: (v,t,r,m) => {
+						return `<h5 class='font-weight-bold'>${r.cast}</h5><p>${v}</p>`;
+					}
+				},
+				{
+					data: "currentTime",
+					title: "current time",
+					render: (v,t,r,m) => {
+						return QuickPlayer.makeTimeInfo(v);
+					}
+				},
+				{
+					data: "recordedAt",
+					title: "recorded at",
+					render: (v,t,r,m) => {
+						return moment(v).format('YYYY-MM-DD H:mm');
+					}
+				}
+			],
+			order: [3, 'desc']
+		});
+		$dtab.columns.adjust().responsive.recalc();
+		$dtab.on('click', 'tbody tr', (e) => {
+			const pdat = $dtab.row(e.currentTarget).data();
+			const cast = this.casts.find(c => c.name == pdat.cast);
+			this.playEpisode(cast, pdat);
+			console.log(pdat);
+		});
+		$('#spinner_modal').hide();
+		$md.modal('show');
+	}
+
+	async loadHTML(uriPage) {
+		if(this.htmlCache.hasOwnProperty(uriPage)) {
+			return this.htmlCache[uriPage];
+		}
+		const res = await fetch(uriPage);
+		const chtml = await res.text();
+		this.htmlCache[uriPage] = chtml;
+		return chtml;
+	}
+
+	static getBookmarks() {
+		if(localStorage.getItem(this.storeKey)) {
+			return JSON.parse(localStorage.getItem(QuickPlayer.storeKey));
+		}
+		return null;
+	}
+
 	stringCut(txt, len) {
 		return txt.length > len ? txt.substring(0, len) + '..' : txt;
 	}
@@ -412,9 +503,23 @@ class QuickPlayer {
 			this.renderCast(cast, $("#popCast"));
 		});;
 		$('#ep-image').attr('title', cast.name);
-		$('#player').attr('src', ep.mediaURL);
+		document.querySelector('#player').setAttribute('src', ep.mediaURL);
+		this.seekResume();
 		if (!$('#navbarSupportedContent').hasClass('show')) {
 			$('#navbarSupportedContent').addClass('show');
+		}
+	}
+
+	seekResume() {
+		const p = document.querySelector('#player');
+		const bm = QuickPlayer.getBookmarks();
+		if(!bm.hasOwnProperty(p.src)) {
+			return;
+		}
+		const r = bm[p.src];
+		console.log('src', p.src, 'record', r);
+		if(bm != null &&  r != null) {
+			p.currentTime = r.currentTime;
 		}
 	}
 }
