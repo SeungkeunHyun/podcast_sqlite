@@ -5,41 +5,39 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
 	<title>Quick player</title>
-	<script type="text/javascript" src="node_modules/jquery/dist/jquery.min.js"></script>
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
 	<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/v/bs4/dt-1.10.20/af-2.3.4/b-1.6.1/cr-1.5.2/fc-3.3.0/fh-3.1.6/r-2.2.3/sc-2.0.1/sl-1.3.1/datatables.min.css" />
 	<link rel="stylesheet" type="text/css" href="node_modules/@fortawesome/fontawesome-free/css/fontawesome.min.css"/>
 	<link rel="stylesheet" type="text/css" href="css/index.css" />
+	<script type="text/javascript" src="node_modules/jquery/dist/jquery.min.js"></script>
+	<script type="text/javascript" src="node_modules/popper.js/dist/umd/popper.min.js"></script>
 	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
 	<script type="text/javascript" src="//cdn.datatables.net/v/bs4/dt-1.10.20/af-2.3.4/b-1.6.1/cr-1.5.2/fc-3.3.0/fh-3.1.6/r-2.2.3/sc-2.0.1/sl-1.3.1/datatables.min.js"></script>
-	<script type="text/javascript" src="node_modules/popper.js/dist/umd/popper.min.js"></script>
-	<script type="text/javascript" href="node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
-	<script type="text/javascript" href="node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 	<script type="text/javascript" src="node_modules/moment/min/moment.min.js"></script>
 	<script src="https://use.fontawesome.com/releases/v5.12.0/js/all.js" data-auto-replace-svg="nest"></script>
 	<script type="text/javascript" src="js/index.js"></script>
 </head>
 <body>
-	<div class="pos-f-t">
+	<div>
 		<div class="collapse bg-dark" id="navbarSupportedContent">
 			<div class="media" id="divPlayer">
-				<div class="media-left mr-4"><img id="ep-image" class="media-object rounded" width="60px"></div>
-				<div class="media-body ml-1">
+				<div class="media-left mr-5"><img id="ep-image" class="media-object rounded" width="60px"></div>
+				<div class="media-body m-0">
 					<div class="row">
-						<h5 class="media-heading text-wrap text-light" id="ep-title" width="50%"></h5>
+						<h5 class="mt-0 text-wrap text-light" id="ep-title" width="50%"></h5>
 					</div>
 					<div class="row">
-						<div id="playerButtons" class="btn-group d-flex"  class="col-6" role="group" aria-label="Basic example">
-							<button class="btn bg-dark" role="button"><i class="p-1 fas fa-backward fa-lg text-light"></i></button>
-							<button class="btn bg-dark" role="button"><i class="p-1 fas fa-pause fa-lg text-light"></i></button>
-							<button class="btn bg-dark" role="button"><i class="p-1 fas fa-forward fa-lg text-light"></i></button>
+						<div id="playerButtons" class="btn-group d-flex p-1"  class="col-6" role="group" aria-label="Basic example">
+							<button class="btn bg-dark" role="button"><i class="fas fa-backward fa-lg text-light"></i></button>
+							<button class="btn bg-dark" role="button"><i class="fas fa-pause fa-lg text-light"></i></button>
+							<button class="btn bg-dark" role="button"><i class="fas fa-forward fa-lg text-light"></i></button>
 						</div>
-						<div class="col-6">
+						<div class="col-6 p-1">
 							<span id="progressStat" class="text-light col-5 ml-2"></span>
 						</div>
 					</div>
 					<div class="row">
-						<div class="progress col-12" width="100%">
+						<div class="progress col-12 text-right" width="80%">
 							<div class="progress-bar text-dark" id="playerProgress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
 						</div>
 					</div>
@@ -49,9 +47,24 @@
 		</div>
 		<nav class="navbar navbar-dark bg-dark">
 			<a href="#" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" class="text-light">Player toggle</a>
-			<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+			<!--// 
+			<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent1" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
 				<span class="navbar-toggler-icon"></span>
 			</button>
+			<div class="collapse navbar-collapse" id="navbarSupportedContent1">
+				<ul class="navbar-nav mr-auto text-right">
+					<li class="nav-item active">
+						<a href="#" id="po-bookmarks" data-toggle="popover" data-content="" data-placement="left" title="Bookmarks">Bookmarks</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="#">Features</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="#">Pricing</a>
+					</li>
+				</ul>
+			</div>
+			//-->
 		</nav>
 	</div>
 	<div class="container-fluid content mt-3">

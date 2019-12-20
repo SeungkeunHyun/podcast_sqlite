@@ -6,6 +6,7 @@ class QuickPlayer {
 	player = null;
 	casts = [];
 	updatedCasts = [];
+	static storeKey = 'qpBookmarks';
 	herokuFetcher = 'https://phpfetch.herokuapp.com/fetchURL.php';
 	constructor() {
 
@@ -25,6 +26,40 @@ class QuickPlayer {
 		}).catch(ex => {
 			console.error(ex);
 		});
+		this.initBookmarks();
+	}
+
+	initBookmarks() {
+		$("#po-bookmarks").popover({
+			html: true,
+			content: this.listBookmarks
+		});
+	}
+
+	listBookmarks() {
+		$("#po-bookmarks").attr('data-content','');
+		const storeKey = 'qpBookmarks';
+		console.log(storeKey, localStorage.getItem(storeKey));
+		if (localStorage.getItem(storeKey) != null) {
+			const bms = JSON.parse(localStorage.getItem(storeKey));
+			let $ul = $('ul');
+			for (let k in bms) {
+				let bmark = bms[k];
+				$ul.append(`<li>
+							<div class='media'>
+								<img class="mr-3" src="${bmark.image}" width='60' alt="${bmark.cast}">
+									<div class="media-body">
+										<h5 class="mt-0">${bmark.cast}</h5>
+										${bmark.title} (${QuickPlayer.makeTimeInfo(parseInt(bmark.currentTime))})
+									</div>
+							</div>
+						</li>`);
+			}
+			console.log(storeKey, $ul[0].outerHTML);
+			return "<div id='divBM'>" + $ul[0].outerHTML + "</div>";
+		} else {
+			return "None of bookmarks";
+		}
 	}
 
 	async initializeUI() {
@@ -134,12 +169,13 @@ class QuickPlayer {
 					res = await res.json();
 					if(res.hasOwnProperty('error') || res.responseText.indexOf('Warning') > -1) {
 						console.error('error in posting', res, itm);
-						break;
-					}
-					if (this.updatedCasts.indexOf(c.podcastID) == -1) {
+						if(episodes.length > 15) {
+							break;
+						}
+					} else if (this.updatedCasts.indexOf(c.podcastID) == -1) {
 						this.updatedCasts.push(c.podcastID);
+						console.log('posting result', res, itm);
 					}
-					console.log('posting result', res.responseText, itm);
 				} catch(res) {
 					console.error(itm, res.responseText);
 					break;
@@ -206,6 +242,7 @@ class QuickPlayer {
 		this.mainTab.on('click', 'tbody tr', (e) => {
 			console.log(e);
 			const row = e.currentTarget;
+			$('#spinner_modal').hide();
 			this.renderCast(this.mainTab.row(row).data(), $("#popCast"));
 		});
 		this.player = document.getElementById('player');
@@ -237,18 +274,51 @@ class QuickPlayer {
 		this.player.addEventListener('play', e => {
 			console.log(e);
 		});
-		this.player.addEventListener('pause', e => {
-		});
 		this.player.addEventListener('abort', e => {
 		});
 		*/
+		this.player.addEventListener('pause', e => {
+			this.recordCurrent();
+		});
+
+		this.player.addEventListener('loadedmetadata', e => {
+			if(localStorage.getItem(QuickPlayer.storeKey)) {
+				const qpb = JSON.parse(localStorage.getItem(QuickPlayer.storeKey));
+				if(qpb.hasOwnProperty(this.player.src)) {
+					this.player.currentTime = qpb[this.player.src].currentTime;
+				}
+			}
+		});
+
 		this.player.addEventListener('timeupdate', e=> {
 			if(isNaN(this.player.duration)) {
 				return;
 			}
+			if(parseInt(this.player.currentTime) % 10 == 0) {
+				this.recordCurrent();
+			}
 			this.setProgressPercentage();
 			this.detectProgressMove();
 		});
+	}
+
+	recordCurrent() {
+		const rec = {
+			title: $('#ep-title').attr('title'),
+			image: $('#ep-image').attr('src'),
+			cast: $('#ep-image').attr('title'),
+			mediaURL: $('#player').attr('src'),
+			currentTime: document.querySelector('#player').currentTime,
+			recordedAt: new Date().getTime()
+		};
+		let qpb = {};
+		if (localStorage.getItem(QuickPlayer.storeKey)) {
+			qpb = JSON.parse(localStorage.getItem(QuickPlayer.storeKey));
+			qpb[rec.mediaURL] = rec;
+		} else {
+			qpb[rec.mediaURL] = rec;
+		}
+		localStorage.setItem(QuickPlayer.storeKey, JSON.stringify(qpb));
 	}
 
 	detectProgressMove() {
@@ -260,7 +330,7 @@ class QuickPlayer {
 		});
 	}
 
-	makeTimeInfo(ti) {
+	static makeTimeInfo(ti) {
 		const dur = moment.duration(ti * 1000);
 		return (dur.hours() == 0 ? '' : dur.hours() + ':') + (dur.minutes() == 0 ? '' : dur.minutes()  + ':') + dur.seconds();
 	}
@@ -270,7 +340,7 @@ class QuickPlayer {
 		const pct = parseInt((this.player.currentTime / this.player.duration) * 100);
 		$pbar.attr("style", `width: ${pct}%`);
 		$pbar.attr("arial-valuenow", pct);
-		$("#progressStat").text(`${this.makeTimeInfo(this.player.currentTime)} / ${this.makeTimeInfo(this.player.duration)} (${pct}%)`);
+		$("#progressStat").text(`${QuickPlayer.makeTimeInfo(this.player.currentTime)} / ${QuickPlayer.makeTimeInfo(this.player.duration)} (${pct}%)`);
 	}
 
 	renderCast(cast, $md) {
@@ -290,12 +360,17 @@ class QuickPlayer {
 			this.episodeTab = $('#tabEpisodes').DataTable({
 				data: eps,
 				destroy: true,
+				processing: true,
+				oLanguage: {sProcessing: "<div id='loader'></div>"},
 				autoWidth: true,
 				responsive: true,
 				columns: [
 					{
 						"data": "title",
-						"title": "title"
+						"title": "title",
+						"render": function (val, typ, row, meta) {
+							return `<span style='cursor:pointer' title='${val}' >${val} <i class='fas fa-play'></i></span>`;
+						}
 					},
 					{
 						"data": "pubDate",
@@ -316,6 +391,9 @@ class QuickPlayer {
 			this.episodeTab.columns.adjust().responsive.recalc();
 			$('#spinner_modal').hide();
 		});
+		if(this.episodeTab) {
+			this.episodeTab.clear().draw();
+		}
 		$md.modal('show');
 	}
 
@@ -330,7 +408,9 @@ class QuickPlayer {
 		document.querySelector("#player").src = ep.mediaURL;
 		$('#ep-title').text(this.stringCut(ep.title, 30));
 		$('#ep-title').attr('title', ep.title);
-		$('#ep-image').attr('src', cast.imageURL);
+		$('#ep-image').attr('src', cast.imageURL).on('click', (e) => {
+			this.renderCast(cast, $("#popCast"));
+		});;
 		$('#ep-image').attr('title', cast.name);
 		$('#player').attr('src', ep.mediaURL);
 		if (!$('#navbarSupportedContent').hasClass('show')) {
@@ -342,4 +422,5 @@ class QuickPlayer {
 $(document).ready(function() {
 	const qp = new QuickPlayer();
 	qp.init();
+	console.log(qp);
 });
