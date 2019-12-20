@@ -252,7 +252,7 @@ class QuickPlayer {
 			this.renderCast(this.mainTab.row(row).data(), $("#popCast"));
 		});
 		this.player = document.getElementById('player');
-		$('#playerButtons i').on('click', e => {
+		$('div.btn-group i').on('click', e => {
 			const btn = e.currentTarget.querySelector('svg');
 			//console.log(btn);
 			if (btn.classList.contains('fa-play')) {
@@ -300,7 +300,8 @@ class QuickPlayer {
 	}
 
 	static iconToggle(isPlaying) {
-		let $btn = isPlaying ? $("i svg.fa-play") : $("i svg.fa-pause");
+		const $buttons = $("div.btn-group i");
+		let $btn = isPlaying ? $buttons.find("svg.fa-play") : $buttons.find("svg.fa-pause");
 		//console.log(isPlaying, $btn);
 		if ($btn.length) {
 			$btn.removeClass(isPlaying ? "fa-play" : "fa-pause");
