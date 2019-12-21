@@ -106,7 +106,7 @@ class QuickPlayer {
 						return `<div class='media'>
                             <div class='media-left'><img src='${row.imageURL}' class='media-object rounded' width='60px'></div>
 							<div class='media-body p-3'><h5 class='media-heading'>${val} <span class='badge badge-info'>${row.episodes}</span></h5>
-							last published at: ${row.lastPubAt}
+							<span class='small'>last published at: ${row.lastPubAt}</span>
 							</div>
                             </div>`;
 					}
@@ -359,8 +359,8 @@ class QuickPlayer {
 		$md.html(modal_html);
 		const header = `<div class="media">
                             <div class="media-left"><img src="${cast.imageURL}" class="media-object rounded" width="60px"></div>
-							<div class="media-body p-3"><h5 class="media-heading">${cast.name} <span class="badge badge-info">${cast.episodes}</span></h5>
-							last published at: ${cast.lastPubAt}
+							<div class="media-body p-3"><h5 class="media-heading mt-0">${cast.name} <span class="badge badge-info">${cast.episodes}</span></h5>
+							<small>last update: ${cast.lastPubAt}</small>
 							</div>
                             </div>`
 		$md.find('h5.modal-title').html(header);
