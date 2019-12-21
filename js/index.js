@@ -106,7 +106,7 @@ class QuickPlayer {
 						return `<div class='media'>
                             <div class='media-left'><img src='${row.imageURL}' class='media-object rounded' width='60px'></div>
 							<div class='media-body p-3'><h5 class='media-heading'>${val} <span class='badge badge-info'>${row.episodes}</span></h5>
-							<span class='small'>last published at: ${row.lastPubAt}</span>
+							<small>last update: ${row.lastPubAt.slice(0,-3)}</small>
 							</div>
                             </div>`;
 					}
@@ -271,6 +271,19 @@ class QuickPlayer {
 				this.player.pause();
 				return;
 			}
+			if (btn.classList.contains('fa-download')) {
+				const ep = $(this.player).data('episode');
+				const cast = $(this.player).data('cast');
+				const rec = {
+					lnk: ep.mediaURL,
+					artist: cast.name,
+					ttl: cast.name,
+					title: ep.title,
+					img: cast.imageURL
+				}
+				$.download('/php/util/encodeID3Download.php', rec, 'dlFrame');
+				return;
+			}
 		});
 		this.player.onplay = e => {
 			QuickPlayer.iconToggle(true);
@@ -360,7 +373,7 @@ class QuickPlayer {
 		const header = `<div class="media">
                             <div class="media-left"><img src="${cast.imageURL}" class="media-object rounded" width="60px"></div>
 							<div class="media-body p-3"><h5 class="media-heading mt-0">${cast.name} <span class="badge badge-info">${cast.episodes}</span></h5>
-							<small>last update: ${cast.lastPubAt}</small>
+							<small>last update: ${cast.lastPubAt.slice(0,-3)}</small>
 							</div>
                             </div>`
 		$md.find('h5.modal-title').html(header);
@@ -500,18 +513,20 @@ class QuickPlayer {
 		if($("#playerToggler").hasClass('disabled')) {
 			$("#playerToggler").removeClass('disabled');
 		}
-		document.querySelector("#player").src = ep.mediaURL;
+		this.player.src = ep.mediaURL;
 		$('#ep-title').text(this.stringCut(ep.title, 30));
 		$('#ep-title').attr('title', ep.title);
 		$('#ep-image').attr('src', cast.imageURL).on('click', (e) => {
 			this.renderCast(cast, $("#popCast"));
 		});;
 		$('#ep-image').attr('title', cast.name);
-		document.querySelector('#player').setAttribute('src', ep.mediaURL);
+		this.player.setAttribute('src', ep.mediaURL);
 		this.seekResume();
 		if (!$('#playerToggle').hasClass('show')) {
 			$('#playerToggle').addClass('show');
 		}
+		$(this.player).data('cast', cast);
+		$(this.player).data('episode', ep);
 	}
 
 	seekResume() {
