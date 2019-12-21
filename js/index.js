@@ -497,6 +497,9 @@ class QuickPlayer {
 		if (this.player != null && !this.player.paused) {
 			this.player.pause();
 		}
+		if($("#playerToggler").hasClass('disabled')) {
+			$("#playerToggler").removeClass('disabled');
+		}
 		document.querySelector("#player").src = ep.mediaURL;
 		$('#ep-title').text(this.stringCut(ep.title, 30));
 		$('#ep-title').attr('title', ep.title);
@@ -506,8 +509,8 @@ class QuickPlayer {
 		$('#ep-image').attr('title', cast.name);
 		document.querySelector('#player').setAttribute('src', ep.mediaURL);
 		this.seekResume();
-		if (!$('#navbarSupportedContent').hasClass('show')) {
-			$('#navbarSupportedContent').addClass('show');
+		if (!$('#playerToggle').hasClass('show')) {
+			$('#playerToggle').addClass('show');
 		}
 	}
 

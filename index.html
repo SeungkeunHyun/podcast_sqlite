@@ -19,7 +19,7 @@
 </head>
 <body>
 	<div>
-		<div class="collapse bg-dark" id="navbarSupportedContent">
+		<div class="collapse bg-dark" id="playerToggle">
 			<div class="media" id="divPlayer">
 				<div class="media-left mr-5"><img id="ep-image" class="media-object rounded" width="60px"></div>
 				<div class="media-body m-0">
@@ -37,30 +37,34 @@
 						</div>
 					</div>
 					<div class="row">
-						<div class="progress col-12 text-right" width="80%">
-							<div class="progress-bar text-dark" id="playerProgress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+						<div class="progress col-12 text-right" width="100%">
+							<div class="progress-bar text-dark mr-10" id="playerProgress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
 						</div>
 					</div>
 				</div>
 			</div>
 			<audio id="player" autoplay></audio>
 		</div>
-		<nav class="navbar navbar-dark bg-dark">
-			<a href="#" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" class="text-light">Player toggle</a>
-			<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent1" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+		<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+			<a class="navbar-brand" href="#">닭쳐 QP</a>
+			<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
 				<span class="navbar-toggler-icon"></span>
 			</button>
-			<div class="collapse navbar-collapse" id="navbarSupportedContent1">
+			<div class="collapse navbar-collapse" id="navbarSupportedContent">
 				<ul class="navbar-nav mr-auto text-right">
 					<li class="nav-item active">
-						<button class="btn text-light" id="po-bookmarks">Bookmarks</button>
+						<a id="playerToggler" class="nav-link dropdown-toggle disabled" type="button" data-toggle="collapse" data-target="#playerToggle" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle player">
+							<span><i class="far fa-play-circle"></i> Player</span>
+						</a>
 					</li>
-					<li class="nav-item">
-						<a class="nav-link" href="#">Features</a>
+					<li class="nav-item active">
+						<button class="btn text-light" id="po-bookmarks"><i class="fas fa-bookmark"></i> Bookmarks</button>
 					</li>
+					<!--//
 					<li class="nav-item">
 						<a class="nav-link" href="#">Pricing</a>
 					</li>
+					//-->
 				</ul>
 			</div>
 		</nav>
