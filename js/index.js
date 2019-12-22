@@ -532,7 +532,7 @@ class QuickPlayer {
 	seekResume() {
 		const p = document.querySelector('#player');
 		const bm = QuickPlayer.getBookmarks();
-		if(!bm.hasOwnProperty(p.src)) {
+		if(bm == null || !bm.hasOwnProperty(p.src)) {
 			return;
 		}
 		const r = bm[p.src];
