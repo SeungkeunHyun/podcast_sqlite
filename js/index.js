@@ -1,6 +1,8 @@
 class QuickPlayer {
 	uri_vcast = '/php/rest-sqlite/index.php/v_casts';
+	uri_casts = '/php/rest-sqlite/index.php/casts';
 	uri_episodes = '/php/rest-sqlite/index.php/episodes';
+	ituns_ns = 'http://www.itunes.com/dtds/podcast-1.0.dtd';
 	mainTab = null;
 	episodeTab = null;
 	player = null;
@@ -106,7 +108,7 @@ class QuickPlayer {
 						return `<div class='media'>
                             <div class='media-left'><img src='${row.imageURL}' class='media-object rounded' width='60px'></div>
 							<div class='media-body p-3'><h5 class='media-heading'>${val} <span class='badge badge-info'>${row.episodes}</span></h5>
-							<small>last update: ${row.lastPubAt.slice(0,-3)}</small>
+							<small title='${row.summary}'>${QuickPlayer.stringCut(row.summary,80)}<br/><span class='text-right'>last update: ${row.lastPubAt.slice(0,-3)}</small>
 							</div>
                             </div>`;
 					}
@@ -154,7 +156,7 @@ class QuickPlayer {
 				data: {uri: fetchURL },
 				dataType: c.provider == 'itunes' ? 'xml' : 'html'
 			});
-			let episodes = this.parseEpisodes(c.provider, data);
+			let episodes = await this.parseEpisodes(c, data);
 			let done = false;
 			for(let itm of episodes) {
 				itm.cast_episode = c.podcastID;
@@ -191,12 +193,26 @@ class QuickPlayer {
 		});
 	}
 
-	parseEpisodes(provider, src) {
+	async parseEpisodes(cast, src) {
 		let $el = null;
 		const episodes = [];
+		let recCast = JSON.parse(JSON.stringify(cast));
+		recCast.cast_episode = null;
+		delete recCast.lastPubAt;
+		delete recCast.episodes;
 		let ep = null;
-		switch(provider) {
+		switch(cast.provider) {
 			case 'podbbang':
+				const data = await $.ajax({
+					url: this.herokuFetcher,
+					data: { uri: 'http://podbbang.com/ch/' + cast.podcastID },
+					dataType: cast.provider == 'itunes' ? 'xml' : 'html'
+				});
+				const $dat = $(data);
+				recCast.name = $dat.find('#all_title p')[0].textContent.trim();
+				recCast.summary = $dat.find('#podcast_summary').attr('title');
+				recCast.imageURL = $dat.find('#podcast_thumb img').attr('src');
+				recCast.author = recCast.name;
 				const scriptStart = "var ischsell";
 				const scriptEnd = "if(episode_uids";
 				const strSrc = src + "";
@@ -215,6 +231,11 @@ class QuickPlayer {
 				break;
 			case 'podty':
 				$el = $(src);
+				recCast.name = $el.filter('title').text().trim();
+				recCast.summary = $el.find('div.intro p')[0].textContent.trim();
+				recCast.imageURL = $el.find('div.thumbnail img').attr('src').trim();
+				recCast.feedURL = $el.find('li.btnCopyRSS').attr('data-clipboard-text').trim();
+				recCast.author = $el.find('ul.subInfo li')[0].querySelector('strong').textContent.trim();
 				$.each($el.find('div.not_mine ul li'), function(i, o) {
 					ep = {};
 					ep.mediaURL = o.getAttribute('data-play-uri');
@@ -225,6 +246,10 @@ class QuickPlayer {
 				});
 				break;
 			default:
+				recCast.name = src.querySelector('rss channel title').textContent.trim();
+				recCast.summary = src.querySelector('rss channel description').textContent.trim();
+				recCast.author = src.querySelector('rss channel author').textContent.trim();
+				recCast.imageURL = src.querySelector('rss channel image[href]').getAttribute('href');
 				src.querySelectorAll('item').forEach(itm => {
 					ep = {};
 					ep.title = itm.querySelector("title").textContent.trim();
@@ -240,6 +265,32 @@ class QuickPlayer {
 					episodes.push(ep);
 				});
 				break;
+		}
+		for(let k in recCast) {
+			if(cast.hasOwnProperty(k) && cast[k] !== recCast[k]) {
+				console.log(k, "prev", cast[k], "current", recCast[k])
+				const reqURL = this.uri_casts + '/' + recCast.podcastID;
+				fetch(reqURL, {
+					method: "PUT",
+					mode: 'cors', // no-cors, *cors, same-origin
+					cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+					credentials: 'same-origin', // include, *same-origin, omit
+					headers: {
+						'Content-Type': 'application/json'
+						//'Content-Type': 'application/x-www-form-urlencoded'
+					},
+					redirect: 'follow', // manual, *follow, error
+					referrer: 'no-referrer', // no-referrer, *client
+					body: JSON.stringify(recCast)
+				}).then(res => {
+					 if(res.ok) 
+						return res.json();
+				})
+				.then(resp => {
+					console.log(reqURL, recCast, resp)
+				});
+				break;
+			}
 		}
 		return episodes.sort((a,b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
 	}
@@ -502,7 +553,7 @@ class QuickPlayer {
 		return null;
 	}
 
-	stringCut(txt, len) {
+	static stringCut(txt, len) {
 		return txt.length > len ? txt.substring(0, len) + '..' : txt;
 	}
 
@@ -514,7 +565,7 @@ class QuickPlayer {
 			$("#playerToggler").removeClass('disabled');
 		}
 		this.player.src = ep.mediaURL;
-		$('#ep-title').text(this.stringCut(ep.title, 30));
+		$('#ep-title').text(QuickPlayer.stringCut(ep.title, 30));
 		$('#ep-title').attr('title', ep.title);
 		$('#ep-image').attr('src', cast.imageURL).on('click', (e) => {
 			this.renderCast(cast, $("#popCast"));
