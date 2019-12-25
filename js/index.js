@@ -8,8 +8,6 @@ class QuickPlayer {
 	player = null;
 	casts = [];
 	updatedCasts = [];
-	htmlCache = {};
-	static storeKey = 'qpBookmarks';
 	herokuFetcher = 'https://phpfetch.herokuapp.com/fetchURL.php';
 	constructor() {
 
@@ -37,39 +35,6 @@ class QuickPlayer {
 		});
 	}
 
-	initBookmarks() {
-		$("#po-bookmarks").popover({
-			html: true,
-			content: this.listBookmarks
-		});
-	}
-
-	listBookmarks() {
-		$("#po-bookmarks").attr('data-content','');
-		const storeKey = 'qpBookmarks';
-		console.log(storeKey, localStorage.getItem(storeKey));
-		if (localStorage.getItem(storeKey) != null) {
-			const bms = JSON.parse(localStorage.getItem(storeKey));
-			let $ul = $('ul');
-			for (let k in bms) {
-				let bmark = bms[k];
-				$ul.append(`<li>
-							<div class='media'>
-								<img class="mr-3" src="${bmark.image}" width='60' alt="${bmark.cast}">
-									<div class="media-body">
-										<h5 class="mt-0">${bmark.cast}</h5>
-										${bmark.title} (${QuickPlayer.makeTimeInfo(parseInt(bmark.currentTime))})
-									</div>
-							</div>
-						</li>`);
-			}
-			console.log(storeKey, $ul[0].outerHTML);
-			return "<div id='divBM'>" + $ul[0].outerHTML + "</div>";
-		} else {
-			return "None of bookmarks";
-		}
-	}
-
 	async initializeUI() {
 		await this.fetchEpisodes();
 		this.casts.filter(cast => this.updatedCasts.indexOf(cast.podcastID) > -1).forEach(async(cast) => {
@@ -89,45 +54,7 @@ class QuickPlayer {
 				{ responsivePriority: 1, targets: 2 },
 				{ responsivePriority: 2, targets: 1 }
 			],
-			columns: [
-				{
-					"data": "provider",
-					"title": "provider",
-					"width": "5%"
-				},
-				{
-					"data": "category",
-					"title": "category",
-					"width": "8%"
-				},
-				{
-					"data": "name",
-					"title": "title",
-					"width": "50%",
-					"render": function (val, typ, row, meta) {
-						return `<div class='media'>
-                            <div class='media-left'><img src='${row.imageURL}' class='media-object rounded' width='60px'></div>
-							<div class='media-body p-3'><h5 class='media-heading'>${val} <span class='badge badge-info'>${row.episodes}</span></h5>
-							<small title='${row.summary}'>${QuickPlayer.stringCut(row.summary,80)}<br/><span class='text-right'>last update: ${row.lastPubAt.slice(0,-3)}</small>
-							</div>
-                            </div>`;
-					}
-				},
-				{
-					"data": "lastPubAt",
-					"title": "last pub at",
-					"width": "10%",
-					"render": function(val, typ, row, meta) {
-						const dat = moment(val);
-						return `<span style='display:none'>${dat.valueOf()}</span>${moment(val).fromNow()}`;
-					}
-				},
-				{
-					"data": "episodes",
-					"title": "episodes",
-					"visible": false
-				}
-			],
+			columns: QPHelper.columnsCast,
 			order: [3, 'desc']
 		});
 		this.mainTab.columns.adjust().responsive.recalc();
@@ -399,7 +326,7 @@ class QuickPlayer {
 				delete qpb[mediaSrc];
 			}
 		}
-		localStorage.setItem(QuickPlayer.storeKey, JSON.stringify(qpb));
+		localStorage.setItem(QPHelper.storeKey, JSON.stringify(qpb));
 	}
 
 	detectProgressMove() {
@@ -410,21 +337,16 @@ class QuickPlayer {
 		});
 	}
 
-	static makeTimeInfo(ti) {
-		const dur = moment.duration(ti * 1000);
-		return (dur.hours() == 0 ? '' : dur.hours() + ':') + (dur.minutes() == 0 ? '' : dur.minutes()  + ':') + dur.seconds();
-	}
-
 	setProgressPercentage() {
 		const $pbar = $("div.progress-bar");
 		const pct = parseInt((this.player.currentTime / this.player.duration) * 100);
 		$pbar.attr("style", `width: ${pct}%`);
 		$pbar.attr("arial-valuenow", pct);
-		$("#progressStat").text(`${QuickPlayer.makeTimeInfo(this.player.currentTime)} / ${QuickPlayer.makeTimeInfo(this.player.duration)} (${pct}%)`);
+		$("#progressStat").text(`${QPHelper.makeTimeInfo(this.player.currentTime)} / ${QPHelper.makeTimeInfo(this.player.duration)} (${pct}%)`);
 	}
 
 	async renderCast(cast, $md) {
-		const modal_html = await this.loadHTML('components/modal_episodes.html');
+		const modal_html = await QPHelper.loadHTML('components/modal_episodes.html');
 		$md.html(modal_html);
 		const header = `<div class="media">
                             <div class="media-left"><img src="${cast.imageURL}" class="media-object rounded" width="60px"></div>
@@ -446,30 +368,7 @@ class QuickPlayer {
 				oLanguage: {sProcessing: "<div id='loader'></div>"},
 				autoWidth: true,
 				responsive: true,
-				columns: [
-					{
-						"data": "title",
-						"title": "title",
-						"render": function (val, typ, row, meta) {
-							return `<span style='cursor:pointer' title='${val}' >${val} <i class='fas fa-play'></i></span>`;
-						}
-					},
-					{
-						"data": "pubDate",
-						"title": "published",
-						"render": function(val, typ, row, meta) {
-							const dat = moment(val);
-							return `<span style='display:none'>${dat.valueOf()}</span><span title='${val}'>${moment(val).fromNow()}</span>`;
-						}
-					},
-					{
-						"data": "mediaURL",
-						"title": "<i class='fas fa-download'></i>",
-						"render": function (val, typ, row, meta) {
-							return `<button class='btn' type='button' role='button' title='${val}'><i class='fas fa-download'></i></button>`;
-						}
-					}
-				],
+				columns: QPHelper.columnsEpisode,
 				order: [1, 'desc']
 			});
 			const $dtab = this.episodeTab;
@@ -501,7 +400,7 @@ class QuickPlayer {
 			eps.push(bookmarks[k]);
 		}
 		eps.sort((a,b) => b.recordedAt - a.recordedAt);
-		const modal_html = await this.loadHTML('components/modal_bookmarks.html');
+		const modal_html = await QPHelper.loadHTML('components/modal_bookmarks.html');
 		$md.html(modal_html);
 		//console.log(eps);
 		let $dtab = $('#tabEpisodes').DataTable({
@@ -510,36 +409,7 @@ class QuickPlayer {
 			responsive: true,
 			processing: true,
 			autoWidth: true,
-			columns: [
-				{
-					data: "cast",
-					title: "cast",
-					render: (v, t, r, m) => {
-						return `<img src='${r.image}' width='40' alt='${r.cast}' class='rounded'>`;
-					}
-				},
-				{
-					data: "title",
-					title: "title",
-					render: (v,t,r,m) => {
-						return `<h5 class='font-weight-bold'>${r.cast}</h5><p>${v}</p>`;
-					}
-				},
-				{
-					data: "currentTime",
-					title: "current time",
-					render: (v,t,r,m) => {
-						return QuickPlayer.makeTimeInfo(v);
-					}
-				},
-				{
-					data: "recordedAt",
-					title: "recorded at",
-					render: (v,t,r,m) => {
-						return moment(v).format('YYYY-MM-DD H:mm');
-					}
-				}
-			],
+			columns: QPHelper.columnsBookmark,
 			order: [3, 'desc']
 		});
 		$dtab.columns.adjust().responsive.recalc();
@@ -553,25 +423,11 @@ class QuickPlayer {
 		$md.modal('show');
 	}
 
-	async loadHTML(uriPage) {
-		if(this.htmlCache.hasOwnProperty(uriPage)) {
-			return this.htmlCache[uriPage];
-		}
-		const res = await fetch(uriPage);
-		const chtml = await res.text();
-		this.htmlCache[uriPage] = chtml;
-		return chtml;
-	}
-
 	static getBookmarks() {
 		if(localStorage.getItem(this.storeKey)) {
-			return JSON.parse(localStorage.getItem(QuickPlayer.storeKey));
+			return JSON.parse(localStorage.getItem(QPHelper.storeKey));
 		}
 		return null;
-	}
-
-	static stringCut(txt, len) {
-		return txt.length > len ? txt.substring(0, len) + '..' : txt;
 	}
 
 	playEpisode(cast, ep) {
@@ -582,7 +438,7 @@ class QuickPlayer {
 			$("#playerToggler").removeClass('disabled');
 		}
 		this.player.src = ep.mediaURL;
-		$('#ep-title').text(QuickPlayer.stringCut(ep.title, 30));
+		$('#ep-title').text(QPHelper.stringCut(ep.title, 30));
 		$('#ep-title').attr('title', ep.title);
 		$('#ep-image').attr('src', cast.imageURL).on('click', (e) => {
 			this.renderCast(cast, $("#popCast"));
