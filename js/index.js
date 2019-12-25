@@ -466,7 +466,6 @@ class QuickPlayer {
 						"data": "mediaURL",
 						"title": "<i class='fas fa-download'></i>",
 						"render": function (val, typ, row, meta) {
-							const dat = moment(val);
 							return `<button class='btn' type='button' role='button' title='${val}'><i class='fas fa-download'></i></button>`;
 						}
 					}
