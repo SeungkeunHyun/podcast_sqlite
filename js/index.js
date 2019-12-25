@@ -138,7 +138,7 @@ class QuickPlayer {
 				const $dat = $(data);
 				recCast.name = $dat.find('#all_title p')[0].textContent.trim();
 				recCast.summary = $dat.find('#podcast_summary').attr('title');
-				recCast.imageURL = $dat.find('#podcast_thumb img').attr('src');
+				recCast.imageURL = $dat.find('#podcast_thumb img').attr('src').replace(/\?.+$/, '');
 				recCast.author = recCast.name;
 				const scriptStart = "var ischsell";
 				const scriptEnd = "if(episode_uids";
