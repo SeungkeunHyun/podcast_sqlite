@@ -325,14 +325,7 @@ class QuickPlayer {
 			if (btn.classList.contains('fa-download')) {
 				const ep = $(this.player).data('episode');
 				const cast = $(this.player).data('cast');
-				const rec = {
-					lnk: ep.mediaURL,
-					artist: cast.name,
-					ttl: cast.name,
-					title: ep.title,
-					img: cast.imageURL
-				}
-				$.download('/php/util/encodeID3Download.php', rec, 'dlFrame');
+				QuickPlayer.download(cast, ep);
 				return;
 			}
 		});
@@ -371,6 +364,18 @@ class QuickPlayer {
 			$btn.removeClass(isPlaying ? "fa-play" : "fa-pause");
 			$btn.addClass(isPlaying ? "fa-pause" :"fa-play");
 		}
+	}
+
+	static download(cast, ep) {
+		const rec = {
+			lnk: ep.mediaURL,
+			artist: cast.author,
+			ttl: cast.name,
+			title: ep.title,
+			img: cast.imageURL
+		}
+		$.download('/php/util/encodeID3Download.php', rec, 'dlFrame');
+		JSAlert.alert(`${rec.ttl} - ${rec.title} to be downloaded soon. Wait a while to be processed`).dismissIn(1000 * 2);
 	}
 
 	recordCurrent(toRecord) {
@@ -456,14 +461,27 @@ class QuickPlayer {
 							const dat = moment(val);
 							return `<span style='display:none'>${dat.valueOf()}</span><span title='${val}'>${moment(val).fromNow()}</span>`;
 						}
+					},
+					{
+						"data": "mediaURL",
+						"title": "<i class='fas fa-download'></i>",
+						"render": function (val, typ, row, meta) {
+							const dat = moment(val);
+							return `<button class='btn' type='button' role='button' title='${val}'><i class='fas fa-download'></i></button>`;
+						}
 					}
 				],
 				order: [1, 'desc']
 			});
-			this.episodeTab.on('click', 'tbody tr', (e) => {
-				const pdat = this.episodeTab.row(e.currentTarget).data();
+			const $dtab = this.episodeTab;
+			this.episodeTab.on('click', 'tbody tr td span', (e) => {
+				const pdat = $dtab.row(e.currentTarget.closest('tr')).data();
 				this.playEpisode(cast, pdat);
 				console.log(pdat);
+			});
+			this.episodeTab.on('click', 'tbody tr td button', (e) => {
+				const pdat = $dtab.row(e.currentTarget.closest('tr')).data();
+				QuickPlayer.download(cast, pdat);
 			});
 			this.episodeTab.columns.adjust().responsive.recalc();
 			$('#spinner_modal').hide();
