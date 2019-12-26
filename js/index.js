@@ -36,11 +36,6 @@ class QuickPlayer {
 	}
 
 	async initializeUI() {
-		await this.fetchEpisodes();
-		this.casts.filter(cast => this.updatedCasts.indexOf(cast.podcastID) > -1).forEach(async(cast) => {
-			const res = await fetch(this.uri_vcast + '/podcastID/' + cast.podcastID);
-			cast = await res.json();
-		});
 		this.mainTab = $("#tabCasts").DataTable({
 			data: this.casts,
 			authWidth: true,
@@ -59,6 +54,12 @@ class QuickPlayer {
 		});
 		this.mainTab.columns.adjust().responsive.recalc();
 		this.addEvents();
+		await this.fetchEpisodes();
+		console.log('updated casts', this.updatedCasts);
+		this.casts.filter(cast => this.updatedCasts.contains(cast.podcastID)).forEach(async (cast) => {
+			const res = await fetch(this.uri_vcast + '/podcastID/' + cast.podcastID);
+			cast = await res.json();
+		});	
 	}
 
 	getFetchURL(cast) {
@@ -74,50 +75,54 @@ class QuickPlayer {
 		}
 	}
 
-	fetchEpisodes() {
-		this.casts.forEach( async(c) => {
-			const fetchURL = this.getFetchURL(c);
-			//console.log(c, c.feedURL);
-			const data = await $.ajax({
-				url: this.herokuFetcher, 
-				data: {uri: fetchURL },
-				dataType: c.provider == 'itunes' ? 'xml' : 'html'
-			});
-			let episodes = await this.parseEpisodes(c, data);
-			let done = false;
-			for(let itm of episodes) {
-				itm.cast_episode = c.podcastID;
-				try {
-					let res = await fetch(this.uri_episodes, {
-						method: "POST",
-						mode: 'cors', // no-cors, *cors, same-origin
-						cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-						credentials: 'same-origin', // include, *same-origin, omit
-						headers: {
-							'Content-Type': 'application/json'
-							// 'Content-Type': 'application/x-www-form-urlencoded',
-						},
-						redirect: 'follow', // manual, *follow, error
-						referrer: 'no-referrer', // no-referrer, *client
-						body: JSON.stringify(itm)
-					});
-					res = await res.json();
-					if(res.hasOwnProperty('error') || res.responseText.indexOf('Warning') > -1) {
-						//console.error('error in posting', res, itm);
-						if(episodes.length > 15) {
-							break;
-						}
-					} else if (this.updatedCasts.indexOf(c.podcastID) == -1) {
-						this.updatedCasts.push(c.podcastID);
-						console.log('posting result', res, itm);
-					}
-				} catch(res) {
-					console.error(itm, res.responseText);
-					break;
-				}
-				//console.log(c.provider, episodes);
-			}
+	async fetchEpisodes() {
+		for(let c of this.casts) {
+			await this.refreshEpisode(c);
+		}
+	}
+
+	async refreshEpisode(cast) {
+		const fetchURL = this.getFetchURL(cast);
+		//console.log(c, c.feedURL);
+		const data = await $.ajax({
+			url: this.herokuFetcher,
+			data: { uri: fetchURL },
+			dataType: cast.provider == 'itunes' ? 'xml' : 'html'
 		});
+		let episodes = await this.parseEpisodes(cast, data);
+		let done = false;
+		for (let itm of episodes) {
+			itm.cast_episode = cast.podcastID;
+			try {
+				let res = await fetch(this.uri_episodes, {
+					method: "POST",
+					mode: 'cors', // no-cors, *cors, same-origin
+					cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+					credentials: 'same-origin', // include, *same-origin, omit
+					headers: {
+						'Content-Type': 'application/json'
+						// 'Content-Type': 'application/x-www-form-urlencoded',
+					},
+					redirect: 'follow', // manual, *follow, error
+					referrer: 'no-referrer', // no-referrer, *client
+					body: JSON.stringify(itm)
+				});
+				res = await res.json();
+				if (res.hasOwnProperty('error') || res.responseText.indexOf('Warning') > -1) {
+					//console.error('error in posting', res, itm);
+					if (episodes.length > 15) {
+						break;
+					}
+				} else if (this.updatedCasts.indexOf(cast.podcastID) == -1) {
+					this.updatedCasts.push(cast.podcastID);
+					console.log('posting result', res, itm);
+				}
+			} catch (res) {
+				console.error(itm, res);
+				break;
+			}
+			//console.log(c.provider, episodes);
+		}
 	}
 
 	async parseEpisodes(cast, src) {
@@ -230,7 +235,7 @@ class QuickPlayer {
 			this.renderCast(this.mainTab.row(row).data(), $("#popCast"));
 		});
 		this.player = document.getElementById('player');
-		$('div.btn-group i').on('click', e => {
+		$('div.btn-group button').on('click', e => {
 			const btn = e.currentTarget.querySelector('svg');
 			//console.log(btn);
 			if (btn.classList.contains('fa-play')) {
