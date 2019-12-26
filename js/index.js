@@ -84,9 +84,11 @@ class QuickPlayer {
 	}
 
 	async fetchEpisodes() {
-		for(let c of this.casts) {
-			await this.refreshEpisode(c);
-		}
+		await Promise.all(
+			this.casts.map(async cast => {
+				const failCount = await this.refreshEpisode(cast);
+				console.log('episode loading result', cast, failCount);
+		}));
 	}
 
 	async refreshEpisode(cast) {
@@ -101,6 +103,9 @@ class QuickPlayer {
 		let done = false;
 		let failCount = 0;
 		for (let itm of episodes) {
+			if(failCount > 1) {
+				break;
+			}
 			itm.cast_episode = cast.podcastID;
 			try {
 				let res = await fetch(this.uri_episodes, {
@@ -119,20 +124,21 @@ class QuickPlayer {
 				res = await res.json();
 				if (res.hasOwnProperty('error')) {
 					failCount++;
-					console.error('error in posting', res, itm);
+					//console.error('error in posting', res, itm);
 					if (episodes.length > 15 || failCount > 1) {
 						break;
 					}
 				} else if (this.updatedCasts.indexOf(cast.podcastID) == -1) {
 					this.updatedCasts.push(cast.podcastID);
-					console.log('posting result', res, itm);
+					//console.log('posting result', res, itm);
 				}
 			} catch (res) {
+				failCount++;
 				console.error(itm, res);
 				break;
 			}
-			//console.log(c.provider, episodes);
 		}
+		return failCount;
 	}
 
 	async parseEpisodes(cast, src) {
