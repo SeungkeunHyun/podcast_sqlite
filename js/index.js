@@ -56,10 +56,10 @@ class QuickPlayer {
 		this.addEvents();
 		await this.fetchEpisodes();
 		console.log('updated casts', this.updatedCasts);
-		this.casts.filter(cast => this.updatedCasts.contains(cast.podcastID)).forEach(async (cast) => {
-			const res = await fetch(this.uri_vcast + '/podcastID/' + cast.podcastID);
-			cast = await res.json();
-		});	
+		for(let c of this.casts.filter(cast => this.updatedCasts.includes(cast.podcastID))) {
+			const res = await fetch(this.uri_vcast + '/podcastID/' + c.podcastID);
+			c = await res.json();
+		}
 	}
 
 	getFetchURL(cast) {
