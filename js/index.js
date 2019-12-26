@@ -60,6 +60,10 @@ class QuickPlayer {
 			const res = await fetch(this.uri_vcast + '/podcastID/' + c.podcastID);
 			c = await res.json();
 		}
+		if(this.updatedCasts.length) {
+			this.mainTab.clear();
+			this.mainTab.rows.add(this.casts).draw();
+		}
 	}
 
 	getFetchURL(cast) {
@@ -173,7 +177,7 @@ class QuickPlayer {
 					ep.mediaURL = o.getAttribute('data-play-uri');
 					ep.title = o.getAttribute('data-episode-name');
 					ep.pubDate = o.querySelector('div.episodeInfo time.date') == null ? null : o.querySelector('div.episodeInfo time.date').textContent.replace('.', '-');
-					ep.duration = o.querySelector('div.episodeInfo time.playTime') == null ? null : o.querySelector('div.episodeInfo time.playTime').textContent;
+					ep.duration = o.querySelector('div.episodeInfo time.playTime') == null ? null : o.querySelector('div.episodeInfo time.playTime').textContent.trim();
 					episodes.push(ep);
 				});
 				break;
