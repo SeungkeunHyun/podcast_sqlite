@@ -56,9 +56,13 @@ class QuickPlayer {
 		this.addEvents();
 		await this.fetchEpisodes();
 		console.log('updated casts', this.updatedCasts);
-		for(let c of this.casts.filter(cast => this.updatedCasts.includes(cast.podcastID))) {
-			const res = await fetch(this.uri_vcast + '/podcastID/' + c.podcastID);
-			c = await res.json();
+		this.casts = this.casts.filter(i => !this.updatedCasts.includes(i.podcastID));
+		for(var c of this.updatedCasts) {
+			const reqURI = this.uri_vcast + '/podcastID/' + c;
+			console.log('cast to refresh', reqURI);
+			const res = await fetch(reqURI);
+			const updCast = await res.json();
+			this.casts.push(updCast[0]);
 		}
 		if(this.updatedCasts.length) {
 			this.mainTab.clear();
@@ -95,6 +99,7 @@ class QuickPlayer {
 		});
 		let episodes = await this.parseEpisodes(cast, data);
 		let done = false;
+		let failCount = 0;
 		for (let itm of episodes) {
 			itm.cast_episode = cast.podcastID;
 			try {
@@ -113,8 +118,9 @@ class QuickPlayer {
 				});
 				res = await res.json();
 				if (res.hasOwnProperty('error')) {
+					failCount++;
 					console.error('error in posting', res, itm);
-					if (episodes.length > 15) {
+					if (episodes.length > 15 || failCount > 1) {
 						break;
 					}
 				} else if (this.updatedCasts.indexOf(cast.podcastID) == -1) {
@@ -223,6 +229,9 @@ class QuickPlayer {
 						return res.json();
 				})
 				.then(resp => {
+					if(!this.updatedCasts.includes(recCast.podcastID)) {
+						this.updatedCasts.push(recCast.podcastID);
+					}
 					console.log(reqURL, recCast, resp)
 				});
 				break;
