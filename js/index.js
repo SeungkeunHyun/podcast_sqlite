@@ -108,8 +108,8 @@ class QuickPlayer {
 					body: JSON.stringify(itm)
 				});
 				res = await res.json();
-				if (res.hasOwnProperty('error') || res.responseText.indexOf('Warning') > -1) {
-					//console.error('error in posting', res, itm);
+				if (res.hasOwnProperty('error')) {
+					console.error('error in posting', res, itm);
 					if (episodes.length > 15) {
 						break;
 					}
