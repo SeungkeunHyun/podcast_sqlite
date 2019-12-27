@@ -62,24 +62,27 @@ class QPHelper {
 		{
 			"data": "provider",
 			"title": "provider",
-			"width": "5%"
+			"visible": false
 		},
 		{
 			"data": "category",
 			"title": "category",
-			"width": "8%"
+			"visible": false
 		},
 		{
 			"data": "name",
 			"title": "title",
 			"width": "50%",
 			"render": function (val, typ, row, meta) {
-				return `<div class='media' style='cursor:pointer'>
-                            <div class='media-left'><img src='${row.imageURL}' class='media-object rounded' width='60px'></div>
+				return `<div class='image-box media' style='--image-url:url(${row.imageURL})'>
 							<div class='media-body p-1'><h5 class='media-heading'>${val} <span class='badge badge-info'>${row.episodes}</span></h5>
 							<div class='media-content'>
 							${(row.author && row.author !== val) ? '<small>by <span class="font-weight-bold">' + row.author + '</span></small><br/>' : ''}
 							<small title='${row.summary}'>${QPHelper.stringCut(row.summary, 80)}<br/><span class='text-right'>last update: ${row.lastPubAt.slice(0, -3)}</small>
+							</div>
+							<div class='media-footer text-right'>
+								<a href='#' class='badge badge-primary'>${row.category}</a>
+								<a href='#' class='badge badge-secondary'>${row.provider}</a>
 							</div>
 							</div>
                             </div>`;
@@ -87,11 +90,11 @@ class QPHelper {
 		},
 		{
 			"data": "lastPubAt",
-			"title": "last pub at",
+			"title": '<i class="fas fa-rss"></i> Since',
 			"width": "10%",
 			"render": function (val, typ, row, meta) {
 				const dat = moment(val);
-				return `<span style='display:none'>${dat.valueOf()}</span>${moment(val).fromNow()}<p title='refresh' style='cursor:pointer'><i class='fas fa-sync-alt'></i></p>`;
+				return `<span style='display:none'>${dat.valueOf()}</span>${moment(val).fromNow().replace(/\s+ago$/,'')}<p title='refresh' style='cursor:pointer'><i class='fas fa-sync-alt'></i></p>`;
 			}
 		},
 		{

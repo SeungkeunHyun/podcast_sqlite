@@ -1,17 +1,42 @@
 
-    .container {
-        padding-top: 10px;
-        padding-bottom: 100px;
-    }
-
     a[role=option] {
         color: #000!important;
     }
-	
-	table.dataTable {
+
+    div.container {
+        width: 80%;
+    }
+    
+    thead {
+  display:none;
+}
+
+table.dataTable {
 		border-collapse:collapse;
 		width: 100%
-	}
+    }
+    
+    .image-box {
+
+  /* Here's the trick */
+  box-shadow: inset 0 0 0 100vw rgba(0,0,0,0.5);
+  background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)) , var(--image-url) center center;
+  background-size: cover;
+  background-position: left center;
+
+
+  /* Here's the same styles we applied to our content-div earlier */
+  color: white;
+  min-height: 10vh;
+  display: flex;
+  align-items: left;
+  justify-content: center;
+  transition: box-shadow .3s ease-out;
+}
+.image-box:hover {
+    box-shadow: inset 0 0 0 100vw rgba(0,0,0,0.2);
+}
+
 
     #loader {
   border: 16px solid #f3f3f3;

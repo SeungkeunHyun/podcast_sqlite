@@ -9,6 +9,7 @@
   "author": "Sk Hyun",
   "license": "ISC",
   "dependencies": {
+    "dark-mode-switch": "^1.0.0",
     "jquery": "^3.4.1",
     "js-alert": "^1.0.4",
     "moment": "^2.24.0",

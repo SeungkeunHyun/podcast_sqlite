@@ -47,7 +47,7 @@ class QuickPlayer {
 			sDom: '<"search-box"r>lftip',
 			columnDefs: [
 				{ responsivePriority: 1, targets: 2 },
-				{ responsivePriority: 2, targets: 1 }
+				{ responsivePriority: 2, targets: 3 }
 			],
 			columns: QPHelper.columnsCast,
 			order: [3, 'desc']
@@ -387,10 +387,10 @@ class QuickPlayer {
 	async renderCast(cast, $md) {
 		const modal_html = await QPHelper.loadHTML('components/modal_episodes.html');
 		$md.html(modal_html);
-		const header = `<div class="media">
-                            <div class="media-left"><img src="${cast.imageURL}" class="media-object rounded" width="60px"></div>
-							<div class="media-body p-3"><h5 class="media-heading mt-0">${cast.name} <span class="badge badge-info">${cast.episodes}</span></h5>
-							<small>last update: ${cast.lastPubAt.slice(0,-3)}</small>
+		const header = `<div class="media text-right">
+                            <!--// <div class="media-left"><img src="${cast.imageURL}" class="media-object rounded" width="60px"></div> //-->
+							<div class="media-body"><h5 class="media-heading mt-0 font-weight-bold">${cast.name} <span class="badge badge-info">${cast.episodes}</span></h5>
+							<small class='font-weight-bold'>last update: ${cast.lastPubAt.slice(0,-3)}</small>
 							</div>
                             </div>`
 		$md.find('h5.modal-title').html(header);
@@ -426,6 +426,8 @@ class QuickPlayer {
 		if(this.episodeTab) {
 			this.episodeTab.clear().draw();
 		}
+		$md.find('div.modal-content').css('background-image', 'linear-gradient(rgba(255,255,255,0.4), rgba(255,255,255,0.4)), url(' + cast.imageURL + ')');
+		$md.find('div.modal-content').css('background-size', 'cover');
 		$md.modal('show');
 	}
 
