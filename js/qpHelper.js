@@ -94,7 +94,7 @@ class QPHelper {
 			"width": "10%",
 			"render": function (val, typ, row, meta) {
 				const dat = moment(val);
-				return `<span style='display:none'>${dat.valueOf()}</span>${moment(val).fromNow().replace(/\s+ago$/,'')}<p title='refresh' style='cursor:pointer'><i class='fas fa-sync-alt'></i></p>`;
+				return `<span style='display:none'>${dat.valueOf()}</span><span class='text-light'>${moment(val).fromNow().replace(/\s+ago$/, '')}</span><div title='refresh' class='text-light' style='cursor:pointer'><i class='fas fa-sync-alt'></i></div>`;
 			}
 		},
 		{
