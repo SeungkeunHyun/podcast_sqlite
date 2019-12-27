@@ -58,16 +58,21 @@ class QuickPlayer {
 		console.log('updated casts', this.updatedCasts);
 		this.casts = this.casts.filter(i => !this.updatedCasts.includes(i.podcastID));
 		for(var c of this.updatedCasts) {
-			const reqURI = this.uri_vcast + '/podcastID/' + c;
-			console.log('cast to refresh', reqURI);
-			const res = await fetch(reqURI);
-			const updCast = await res.json();
-			this.casts.push(updCast[0]);
+			const updCast = await this.fetchCast(c);
+			this.casts.push(updCast);
 		}
 		if(this.updatedCasts.length) {
 			this.mainTab.clear();
 			this.mainTab.rows.add(this.casts).draw();
 		}
+	}
+
+	async fetchCast(castID) {
+		const reqURI = this.uri_vcast + '/podcastID/' + castID;
+		console.log('cast to refresh', reqURI);
+		const res = await fetch(reqURI);
+		const recs = await res.json();
+		return recs[0];
 	}
 
 	getFetchURL(cast) {
@@ -87,7 +92,7 @@ class QuickPlayer {
 		await Promise.all(
 			this.casts.map(async cast => {
 				const failCount = await this.refreshEpisode(cast);
-				console.log('episode loading result', cast, failCount);
+				//console.log('episode loading result', cast, failCount);
 		}));
 	}
 
@@ -247,11 +252,21 @@ class QuickPlayer {
 	}
 
 	addEvents() {
-		this.mainTab.on('click', 'tbody tr', (e) => {
-			console.log(e);
-			const row = e.currentTarget;
+		this.mainTab.on('click', 'tbody tr td div.media', (e) => {
+			const row = e.currentTarget.closest('tr');
 			$('#spinner_modal').hide();
 			this.renderCast(this.mainTab.row(row).data(), $("#popCast"));
+		});
+		this.mainTab.on('click', 'tbody tr td svg.fa-sync-alt', async (e) => {
+			const row = e.currentTarget.closest('tr');
+			const $icon = $(e.currentTarget);
+			$icon.addClass('fa-spin');
+			const cdat = this.mainTab.row(row).data();
+			await this.refreshEpisode(cdat);
+			const refdat = await this.fetchCast(cdat.podcastID);
+			console.log('refreshed cast', refdat);
+			this.mainTab.row(row).data(refdat);
+			$icon.removeClass('fa-spin');
 		});
 		this.player = document.getElementById('player');
 		$('div.btn-group button').on('click', e => {
@@ -437,11 +452,16 @@ class QuickPlayer {
 			order: [3, 'desc']
 		});
 		$dtab.columns.adjust().responsive.recalc();
-		$dtab.on('click', 'tbody tr', (e) => {
-			const pdat = $dtab.row(e.currentTarget).data();
+		$dtab.on('click', 'tbody tr span[title=resume]', (e) => {
+			const pdat = $dtab.row(e.currentTarget.closest('tr')).data();
 			const cast = this.casts.find(c => c.name == pdat.cast);
 			this.playEpisode(cast, pdat);
 			console.log(pdat);
+		});
+		$dtab.on('click', 'tbody tr i[title=delete]', (e) => {
+			const row = e.currentTarget.closest('tr');
+			QPHelper.deleteBookmark(QPHelper.storeKey, $dtab.row(row).data().mediaURL);
+			$dtab.row(row).remove().draw();
 		});
 		$('#spinner_modal').hide();
 		$md.modal('show');

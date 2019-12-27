@@ -6,7 +6,9 @@ class QPHelper {
 			"data": "title",
 			"title": "title",
 			"render": function (val, typ, row, meta) {
-				return `<span style='cursor:pointer' title='${val}' >${val} <i class='fas fa-play'></i></span>`;
+				return `<span style='cursor:pointer' title='${val}' >${val} <i class='fas fa-play'></i></span>
+				${row.duration != null ? '<div class="font-weight-bold"><i class="fas fa-hourglass-start"></i>' + row.duration.replace(/^0+:/,'') + '</div>' : ''}
+				`;
 			}
 		},
 		{
@@ -37,14 +39,14 @@ class QPHelper {
 			data: "title",
 			title: "title",
 			render: (v, t, r, m) => {
-				return `<h5 class='font-weight-bold'>${r.cast}</h5><p>${v}</p>`;
+				return `<h5 class='font-weight-bold'>${r.cast}</h5><p>${v} <i style="cursor:pointer" title="delete" class="far fa-trash-alt fa-lg"></i></p>`;
 			}
 		},
 		{
 			data: "currentTime",
 			title: "current time",
 			render: (v, t, r, m) => {
-				return QPHelper.makeTimeInfo(v);
+				return '<span title="resume" style="cursor:pointer"><i class="fas fa-stopwatch"></i> ' + QPHelper.makeTimeInfo(v) + '</span>';
 			}
 		},
 		{
@@ -72,10 +74,13 @@ class QPHelper {
 			"title": "title",
 			"width": "50%",
 			"render": function (val, typ, row, meta) {
-				return `<div class='media'>
+				return `<div class='media' style='cursor:pointer'>
                             <div class='media-left'><img src='${row.imageURL}' class='media-object rounded' width='60px'></div>
-							<div class='media-body p-3'><h5 class='media-heading'>${val} <span class='badge badge-info'>${row.episodes}</span></h5>
+							<div class='media-body p-1'><h5 class='media-heading'>${val} <span class='badge badge-info'>${row.episodes}</span></h5>
+							<div class='media-content'>
+							${(row.author && row.author !== val) ? '<small>by <span class="font-weight-bold">' + row.author + '</span></small><br/>' : ''}
 							<small title='${row.summary}'>${QPHelper.stringCut(row.summary, 80)}<br/><span class='text-right'>last update: ${row.lastPubAt.slice(0, -3)}</small>
+							</div>
 							</div>
                             </div>`;
 			}
@@ -86,7 +91,7 @@ class QPHelper {
 			"width": "10%",
 			"render": function (val, typ, row, meta) {
 				const dat = moment(val);
-				return `<span style='display:none'>${dat.valueOf()}</span>${moment(val).fromNow()}`;
+				return `<span style='display:none'>${dat.valueOf()}</span>${moment(val).fromNow()}<p title='refresh' style='cursor:pointer'><i class='fas fa-sync-alt'></i></p>`;
 			}
 		},
 		{
@@ -127,6 +132,17 @@ class QPHelper {
 		} else {
 			return "None of bookmarks";
 		}
+	}
+
+	static deleteBookmark(storeKey, recordKey) {
+		const strBM = localStorage.getItem(storeKey);
+		if(strBM == null) {
+			return;
+		}
+		const jsonBM = JSON.parse(strBM);
+		delete jsonBM[recordKey];
+		console.log(jsonBM);
+		localStorage.setItem(storeKey, JSON.stringify(jsonBM));
 	}
 
 	static makeTimeInfo(ti) {
