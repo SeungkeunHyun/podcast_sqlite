@@ -11,6 +11,11 @@
   display:none;
 }
 
+.bg_opaque_white { 
+  background: rgb(255, 255, 255, 0.5)
+}
+
+
 table.dataTable {
 		border-collapse:collapse;
 		width: 100%

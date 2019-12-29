@@ -477,7 +477,7 @@ class QuickPlayer {
 			order: [3, 'desc']
 		});
 		$dtab.columns.adjust().responsive.recalc();
-		$dtab.on('click', 'tbody tr span[title=resume]', (e) => {
+		$dtab.on('click', 'tbody tr span[title=resume],tbody h5', (e) => {
 			const pdat = $dtab.row(e.currentTarget.closest('tr')).data();
 			const cast = this.casts.find(c => c.name == pdat.cast);
 			this.playEpisode(cast, pdat);

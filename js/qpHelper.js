@@ -6,8 +6,8 @@ class QPHelper {
 			"data": "title",
 			"title": "title",
 			"render": function (val, typ, row, meta) {
-				return `<span style='cursor:pointer' title='${val}' >${val} <i class='fas fa-play'></i></span>
-				${row.duration != null ? '<div class="font-weight-bold"><i class="fas fa-hourglass-start"></i>' + row.duration.replace(/^0+:/,'') + '</div>' : ''}
+				return `<span style='cursor:pointer' class='bg_opaque_white' title='${val}' >${val} <i class='fas fa-play'></i></span>
+				${row.duration != null ? '<div class="font-weight-bold bg_opaque_white"><i class="fas fa-hourglass-start"></i>' + row.duration.replace(/^0+:/,'') + '</div>' : ''}
 				`;
 			}
 		},
@@ -16,7 +16,7 @@ class QPHelper {
 			"title": "published",
 			"render": function (val, typ, row, meta) {
 				const dat = moment(val);
-				return `<span style='display:none'>${dat.valueOf()}</span><span title='${val}'>${moment(val).fromNow()}</span>`;
+				return `<span style='display:none'>${dat.valueOf()}</span><span class='bg_opaque_white' title='${val}'>${moment(val).fromNow()}</span>`;
 			}
 		},
 		{
