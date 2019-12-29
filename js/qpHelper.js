@@ -154,6 +154,9 @@ class QPHelper {
 	}
 
 	static stringCut(txt, len) {
+		if(!txt) {
+			return '';
+		}
 		return txt.length > len ? txt.substring(0, len) + '..' : txt;
 	}
 }
