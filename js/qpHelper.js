@@ -81,8 +81,8 @@ class QPHelper {
 							<small title='${row.summary}'>${QPHelper.stringCut(row.summary, 80)}<br/><span class='text-right'>last update: ${row.lastPubAt.slice(0, -3)}</small>
 							</div>
 							<div class='media-footer text-right'>
-								<a href='#' class='badge badge-primary'>${row.category}</a>
-								<a href='#' class='badge badge-secondary'>${row.provider}</a>
+								<a href='#' data-colno='1' class='badge badge-primary'>${row.category}</a>
+								<a href='#' data-colno='0' class='badge badge-secondary'>${row.provider}</a>
 							</div>
 							</div>
                             </div>`;

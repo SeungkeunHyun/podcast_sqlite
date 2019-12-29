@@ -40,6 +40,8 @@ class QuickPlayer {
 			data: this.casts,
 			authWidth: true,
 			responsive: true,
+			processing: true,
+			scrollY: window.innerHeight - 150, //$('body').height() - $('.dataTables_scrollBody').height(),
 			paging: false,
 			destroy: true,
 			deferRender: true,
@@ -193,7 +195,7 @@ class QuickPlayer {
 					ep = {};
 					ep.mediaURL = o.getAttribute('data-play-uri');
 					ep.title = o.getAttribute('data-episode-name');
-					ep.pubDate = o.querySelector('div.episodeInfo time.date') == null ? null : o.querySelector('div.episodeInfo time.date').textContent.replace('.', '-');
+					ep.pubDate = o.querySelector('div.episodeInfo time.date') == null ? null : o.querySelector('div.episodeInfo time.date').textContent.replace(/\./g, '-');
 					ep.duration = o.querySelector('div.episodeInfo time.playTime') == null ? null : o.querySelector('div.episodeInfo time.playTime').textContent.trim();
 					episodes.push(ep);
 				});
@@ -252,7 +254,7 @@ class QuickPlayer {
 	}
 
 	addEvents() {
-		this.mainTab.on('click', 'tbody tr td div.media', (e) => {
+		this.mainTab.on('click', 'tbody tr td h5.media-heading', (e) => {
 			const row = e.currentTarget.closest('tr');
 			$('#spinner_modal').hide();
 			this.renderCast(this.mainTab.row(row).data(), $("#popCast"));
@@ -267,6 +269,25 @@ class QuickPlayer {
 			console.log('refreshed cast', refdat);
 			this.mainTab.row(row).data(refdat);
 			$icon.removeClass('fa-spin');
+		});
+		this.mainTab.on('click', 'tbody tr td div.media-footer a', async (e) => {
+			const $srchBtn = $(e.currentTarget);
+			let colno = parseInt($srchBtn.attr('data-colno'));
+			const srchWord = $srchBtn.text();
+			if ($(`div.dataTables_filter label a:contains('${srchWord}')`).length) {
+				return;
+			}
+			this.mainTab.column(colno).search('').draw();
+			let $srchTag = $srchBtn.clone();
+			$srchTag.addClass('m-3');
+			$srchTag.append("<i class='fas fa-times m-1'></i>");
+			$srchTag.on('click', (e) => {
+				colno = parseInt(e.currentTarget.getAttribute('data-colno'));
+				this.mainTab.column(colno).search('').draw();
+				$srchTag.remove();
+			});
+			$("div.dataTables_filter label").prepend($srchTag);
+			this.mainTab.column(colno).search(srchWord).draw();
 		});
 		this.player = document.getElementById('player');
 		$('div.btn-group button').on('click', e => {
@@ -404,6 +425,7 @@ class QuickPlayer {
 				data: eps,
 				destroy: true,
 				processing: true,
+				sDom: '<"search-box"r>lftip',
 				oLanguage: {sProcessing: "<div id='loader'></div>"},
 				autoWidth: true,
 				responsive: true,
@@ -450,6 +472,7 @@ class QuickPlayer {
 			responsive: true,
 			processing: true,
 			autoWidth: true,
+			sDom: '<"search-box"r>lftip',
 			columns: QPHelper.columnsBookmark,
 			order: [3, 'desc']
 		});
