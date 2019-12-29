@@ -254,7 +254,7 @@ class QuickPlayer {
 	}
 
 	addEvents() {
-		this.mainTab.on('click', 'tbody tr td h5.media-heading', (e) => {
+		this.mainTab.on('click', 'tbody tr td h5.media-heading,tbody tr td small', (e) => {
 			const row = e.currentTarget.closest('tr');
 			$('#spinner_modal').hide();
 			this.renderCast(this.mainTab.row(row).data(), $("#popCast"));
@@ -284,7 +284,7 @@ class QuickPlayer {
 			$srchTag.on('click', (e) => {
 				colno = parseInt(e.currentTarget.getAttribute('data-colno'));
 				this.mainTab.column(colno).search('').draw();
-				$srchTag.remove();
+				e.currentTarget.remove();
 			});
 			$("div.dataTables_filter label").prepend($srchTag);
 			this.mainTab.column(colno).search(srchWord).draw();
