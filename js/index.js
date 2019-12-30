@@ -36,24 +36,15 @@ class QuickPlayer {
 	}
 
 	async initializeUI() {
-		this.mainTab = $("#tabCasts").DataTable({
-			data: this.casts,
-			authWidth: true,
-			responsive: true,
-			processing: true,
-			scrollY: window.innerHeight - 150, //$('body').height() - $('.dataTables_scrollBody').height(),
-			paging: false,
-			destroy: true,
-			deferRender: true,
-			fixedHeader: true,
-			sDom: '<"search-box"r>lftip',
-			columnDefs: [
-				{ responsivePriority: 1, targets: 2 },
-				{ responsivePriority: 2, targets: 3 }
-			],
-			columns: QPHelper.columnsCast,
-			order: [3, 'desc']
-		});
+		let dtOptions = QPHelper.getDTOptionsTemplate();
+		dtOptions.data = this.casts;
+		dtOptions.paging = false;
+		dtOptions.scrollY = window.innerHeight - 150, //$('body').height() - $('.dataTables_scrollBody').height(),
+		dtOptions.sDom = '<"search-box"r>lftip',
+		dtOptions.columnDefs = [{ responsivePriority: 1, targets: 2 }, { responsivePriority: 2, targets: 3 }];
+		dtOptions.columns = QPHelper.columnsCast;
+		dtOptions.order = [3, 'desc'];
+		this.mainTab = $("#tabCasts").DataTable(dtOptions);
 		this.mainTab.columns.adjust().responsive.recalc();
 		this.addEvents();
 		await this.fetchEpisodes();
@@ -318,15 +309,19 @@ class QuickPlayer {
 		});
 		this.player.onplay = e => {
 			QuickPlayer.iconToggle(true);
+			$("#playerToggler").addClass('blink_me');
 		};
 		this.player.onabort= e => {
+			$("#playerToggler").removeClass('blink_me');
 			QuickPlayer.iconToggle(false);
 		};
 		this.player.onpause = e => {
+			$("#playerToggler").removeClass('blink_me');
 			QuickPlayer.iconToggle(false);
 			this.recordCurrent(true);
 		};
 		this.player.onended = e => {
+			$("#playerToggler").removeClass('blink_me');
 			QuickPlayer.iconToggle(false);
 			this.recordCurrent(false);
 		}
@@ -338,7 +333,7 @@ class QuickPlayer {
 			if(parseInt(this.player.currentTime) % 10 == 0) {
 				this.recordCurrent(true);
 			}
-			this.setProgressPercentage();
+			const pct = this.setProgressPercentage();
 			this.detectProgressMove();
 		};
 	}
@@ -403,6 +398,7 @@ class QuickPlayer {
 		$pbar.attr("style", `width: ${pct}%`);
 		$pbar.attr("arial-valuenow", pct);
 		$("#progressStat").text(`${QPHelper.makeTimeInfo(this.player.currentTime)} / ${QPHelper.makeTimeInfo(this.player.duration)} (${pct}%)`);
+		return pct;
 	}
 
 	async renderCast(cast, $md) {
@@ -421,17 +417,13 @@ class QuickPlayer {
 				return res.json();
 		})
 		.then(eps => {
-			this.episodeTab = $('#tabEpisodes').DataTable({
-				data: eps,
-				destroy: true,
-				processing: true,
-				sDom: '<"search-box"r>lftip',
-				oLanguage: {sProcessing: "<div id='loader'></div>"},
-				autoWidth: true,
-				responsive: true,
-				columns: QPHelper.columnsEpisode,
-				order: [1, 'desc']
-			});
+			let dtOptions = QPHelper.getDTOptionsTemplate();
+			dtOptions.data = eps;
+			dtOptions.sDom = '<"search-box"r>lftip';
+			dtOptions.oLanguage = { sProcessing: "<div id='loader'></div>" };
+			dtOptions.columns = QPHelper.columnsEpisode;
+			dtOptions.order = [1, 'desc'];
+			this.episodeTab = $('#tabEpisodes').DataTable(dtOptions);
 			const $dtab = this.episodeTab;
 			this.episodeTab.on('click', 'tbody tr td span', (e) => {
 				const pdat = $dtab.row(e.currentTarget.closest('tr')).data();
@@ -466,16 +458,12 @@ class QuickPlayer {
 		const modal_html = await QPHelper.loadHTML('components/modal_bookmarks.html');
 		$md.html(modal_html);
 		//console.log(eps);
-		let $dtab = $('#tabEpisodes').DataTable({
-			data: eps,
-			destroy: true,
-			responsive: true,
-			processing: true,
-			autoWidth: true,
-			sDom: '<"search-box"r>lftip',
-			columns: QPHelper.columnsBookmark,
-			order: [3, 'desc']
-		});
+		let dtOptions = QPHelper.getDTOptionsTemplate();
+		dtOptions.data = eps;
+		dtOptions.sDom = '<"search-box"r>lftip';
+		dtOptions.columns = QPHelper.columnsBookmark;
+		dtOptions.order = [3, 'desc'];
+		let $dtab = $('#tabEpisodes').DataTable(dtOptions);
 		$dtab.columns.adjust().responsive.recalc();
 		$dtab.on('click', 'tbody tr span[title=resume],tbody h5', (e) => {
 			const pdat = $dtab.row(e.currentTarget.closest('tr')).data();
@@ -503,9 +491,7 @@ class QuickPlayer {
 		if (this.player != null && !this.player.paused) {
 			this.player.pause();
 		}
-		if($("#playerToggler").hasClass('disabled')) {
-			$("#playerToggler").removeClass('disabled');
-		}
+		$("#playerToggler").removeClass('d-none');
 		this.player.src = ep.mediaURL;
 		$('#ep-title').text(QPHelper.stringCut(ep.title, 30));
 		$('#ep-title').attr('title', ep.title);

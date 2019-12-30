@@ -1,6 +1,9 @@
 class QPHelper {
 	static storeKey = 'qpBookmarks';
 	static htmlCache = {};
+	static getDTOptionsTemplate() {
+		return JSON.parse('{"authWidth": true, "responsive": true, "processing": true, "destroy": true, "deferRender": true, "fixedHeader": true}');
+	}
 	static columnsEpisode = [
 		{
 			"data": "title",
