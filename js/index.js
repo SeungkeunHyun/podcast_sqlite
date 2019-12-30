@@ -39,7 +39,7 @@ class QuickPlayer {
 		let dtOptions = QPHelper.getDTOptionsTemplate();
 		dtOptions.data = this.casts;
 		dtOptions.paging = false;
-		dtOptions.scrollY = window.innerHeight - 150, //$('body').height() - $('.dataTables_scrollBody').height(),
+		dtOptions.scrollY = window.innerHeight - 250, //$('body').height() - $('.dataTables_scrollBody').height(),
 		dtOptions.sDom = '<"search-box"r>lftip',
 		dtOptions.columnDefs = [{ responsivePriority: 1, targets: 2 }, { responsivePriority: 2, targets: 3 }];
 		dtOptions.columns = QPHelper.columnsCast;
