@@ -9,7 +9,7 @@ class QPHelper {
 			"data": "title",
 			"title": "title",
 			"render": function (val, typ, row, meta) {
-				return `<span style='cursor:pointer' class='bg_opaque_white' title='${val}' >${val} <i class='fas fa-play'></i></span>
+				return `<i class='fas fa-lg fa-${row.mediaURL.match(/\.mp3/i) != null ? 'headphones' : 'tv'}'></i><span style='cursor:pointer' class='bg_opaque_white' title='${val}' >${val} <i class='fas fa-play'></i></span>
 				${row.duration != null ? '<div class="font-weight-bold bg_opaque_white"><i class="fas fa-hourglass-start"></i>' + row.duration.replace(/^0+:/,'') + '</div>' : ''}
 				`;
 			}
@@ -42,7 +42,7 @@ class QPHelper {
 			data: "title",
 			title: "title",
 			render: (v, t, r, m) => {
-				return `<h5 class='font-weight-bold'>${r.cast}</h5><p>${v} <i style="cursor:pointer" title="delete" class="far fa-trash-alt fa-lg"></i></p>`;
+				return `<h5 class='font-weight-bold'>${r.cast}</h5><p><i class='fas fa-lg fa-${r.mediaURL.match(/\.mp3/i) != null ? 'headphones' : 'tv'}'></i> ${v} <i style="cursor:pointer" title="delete" class="far fa-trash-alt fa-lg"></i></p>`;
 			}
 		},
 		{
