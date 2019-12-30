@@ -86,13 +86,17 @@ class QuickPlayer {
 	async fetchEpisodes() {
 		await Promise.all(
 			this.casts.map(async cast => {
-				const failCount = await this.refreshEpisode(cast);
+				const failCount = await this.refreshEpisode(cast, 1);
 				//console.log('episode loading result', cast, failCount);
 		}));
 	}
 
-	async refreshEpisode(cast) {
-		const fetchURL = this.getFetchURL(cast);
+	async refreshEpisode(cast, page) {
+		let fetchURL = this.getFetchURL(cast);
+		if(page != 1) {
+			fetchURL += fetchURL.indexOf('?') == -1 ? '?' : '&';
+			fetchURL += 'page=' + page;
+		}
 		//console.log(c, c.feedURL);
 		const data = await $.ajax({
 			url: this.herokuFetcher,
@@ -138,6 +142,10 @@ class QuickPlayer {
 				break;
 			}
 		}
+		if(failCount == 0 && cast.provider !== 'itunes') {
+			console.log(failCount, cast);
+			this.refreshEpisode(cast, page+1);
+		}
 		return failCount;
 	}
 
@@ -170,6 +178,9 @@ class QuickPlayer {
 				eval(scriptBody);
 				Object.keys(episode).forEach((key) => {
 					//console.log(key, episode[key]);
+					if (episode[key].down_file.match(/paidcontent/i) != null) {
+						return;
+					}
 					ep = {};
 					ep.mediaURL = episode[key].down_file;
 					ep.title = episode[key].title;
@@ -257,7 +268,7 @@ class QuickPlayer {
 			const $icon = $(e.currentTarget);
 			$icon.addClass('fa-spin');
 			const cdat = this.mainTab.row(row).data();
-			await this.refreshEpisode(cdat);
+			await this.refreshEpisode(cdat,1);
 			const refdat = await this.fetchCast(cdat.podcastID);
 			console.log('refreshed cast', refdat);
 			this.mainTab.row(row).data(refdat);
@@ -497,7 +508,15 @@ class QuickPlayer {
 		if (this.player != null && !this.player.paused) {
 			this.player.pause();
 		}
-		$("#playerToggler").removeClass('d-none');
+		if (ep.mediaURL.match(/\.mp3/i) == null) {
+			if($("#player").hasClass('d-none')) {
+				$("#player").removeClass('d-none');
+			}
+		} else {
+			if (!$("#player").hasClass('d-none')) {
+				$("#player").addClass('d-none');
+			}
+		}
 		this.player.src = ep.mediaURL;
 		$('#ep-title').text(QPHelper.stringCut(ep.title, 30));
 		$('#ep-title').attr('title', ep.title);

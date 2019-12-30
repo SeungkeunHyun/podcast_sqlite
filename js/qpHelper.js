@@ -81,7 +81,7 @@ class QPHelper {
 							<div class='media-body p-1'><h5 class='media-heading'>${val} <span class='badge badge-info'>${row.episodes}</span></h5>
 							<div class='media-content'>
 							${(row.author && row.author !== val) ? '<small>by <span class="font-weight-bold">' + row.author + '</span></small><br/>' : ''}
-							<small title='${row.summary}'>${QPHelper.stringCut(row.summary, 80)}<br/><span class='text-right'>last update: ${row.lastPubAt.slice(0, -3)}</small>
+							<small title='${row.summary}'>${row.summary == null ? '' : QPHelper.stringCut(row.summary, 80)}<br/><span class='text-right'>last update: ${row.lastPubAt == null ? '' : row.lastPubAt.slice(0, -3)}</small>
 							</div>
 							<div class='media-footer text-right'>
 								<a href='#' data-colno='1' class='badge badge-primary'>${row.category}</a>
