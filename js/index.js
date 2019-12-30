@@ -37,14 +37,16 @@ class QuickPlayer {
 
 	async initializeUI() {
 		let dtOptions = QPHelper.getDTOptionsTemplate();
-		dtOptions.data = this.casts;
-		dtOptions.paging = false;
-		dtOptions.scrollY = window.innerHeight - 250, //$('body').height() - $('.dataTables_scrollBody').height(),
-		dtOptions.sDom = '<"search-box"r>lftip',
-		dtOptions.columnDefs = [{ responsivePriority: 1, targets: 2 }, { responsivePriority: 2, targets: 3 }];
-		dtOptions.columns = QPHelper.columnsCast;
-		dtOptions.order = [3, 'desc'];
-		this.mainTab = $("#tabCasts").DataTable(dtOptions);
+		const spOptions = {
+			"data": this.casts,
+			"paging": false,
+			"scrollY": window.innerHeight - 250,
+			"sDom": '<"search-box"r>lftip',
+			"columnDefs": [{ responsivePriority: 1, targets: 2 }, { responsivePriority: 2, targets: 3 }],
+			"columns": QPHelper.columnsCast,
+			"order": [3, 'desc']
+		};
+		this.mainTab = $("#tabCasts").DataTable({...dtOptions, ...spOptions});
 		this.mainTab.columns.adjust().responsive.recalc();
 		this.addEvents();
 		await this.fetchEpisodes();
@@ -418,12 +420,14 @@ class QuickPlayer {
 		})
 		.then(eps => {
 			let dtOptions = QPHelper.getDTOptionsTemplate();
-			dtOptions.data = eps;
-			dtOptions.sDom = '<"search-box"r>lftip';
-			dtOptions.oLanguage = { sProcessing: "<div id='loader'></div>" };
-			dtOptions.columns = QPHelper.columnsEpisode;
-			dtOptions.order = [1, 'desc'];
-			this.episodeTab = $('#tabEpisodes').DataTable(dtOptions);
+			const spOptions = {
+				"data": eps,
+				"sDom": '<"search-box"r>lftip',
+				"oLanguage": { sProcessing: "<div id='loader'></div>" },
+				"columns": QPHelper.columnsEpisode,
+				"order": [1, 'desc']
+			}
+			this.episodeTab = $('#tabEpisodes').DataTable({...dtOptions, ...spOptions});
 			const $dtab = this.episodeTab;
 			this.episodeTab.on('click', 'tbody tr td span', (e) => {
 				const pdat = $dtab.row(e.currentTarget.closest('tr')).data();
@@ -459,11 +463,13 @@ class QuickPlayer {
 		$md.html(modal_html);
 		//console.log(eps);
 		let dtOptions = QPHelper.getDTOptionsTemplate();
-		dtOptions.data = eps;
-		dtOptions.sDom = '<"search-box"r>lftip';
-		dtOptions.columns = QPHelper.columnsBookmark;
-		dtOptions.order = [3, 'desc'];
-		let $dtab = $('#tabEpisodes').DataTable(dtOptions);
+		const spOptions = {
+			"data": eps,
+			"sDom": '<"search-box"r>lftip',
+			"columns": QPHelper.columnsBookmark,
+			"order": [3, 'desc']
+		}
+		let $dtab = $('#tabEpisodes').DataTable({...dtOptions, ...spOptions});
 		$dtab.columns.adjust().responsive.recalc();
 		$dtab.on('click', 'tbody tr span[title=resume],tbody h5', (e) => {
 			const pdat = $dtab.row(e.currentTarget.closest('tr')).data();
