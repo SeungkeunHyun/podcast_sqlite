@@ -49,7 +49,10 @@ class QPHelper {
 			data: "currentTime",
 			title: "current time",
 			render: (v, t, r, m) => {
-				return '<span title="resume" style="cursor:pointer"><i class="fas fa-stopwatch"></i> ' + QPHelper.makeTimeInfo(v) + '</span>';
+				if(v)
+					return '<span title="resume" style="cursor:pointer"><i class="fas fa-stopwatch"></i> ' + QPHelper.makeTimeInfo(v) + '</span>';
+				else
+					return '';
 			}
 		},
 		{
@@ -57,6 +60,32 @@ class QPHelper {
 			title: "recorded at",
 			render: (v, t, r, m) => {
 				return moment(v).format('YYYY-MM-DD H:mm');
+			}
+		}
+	];
+
+	static columnsSearch = [
+		{
+			data: "cast",
+			title: "cast",
+			render: (v, t, r, m) => {
+				return `<img src='${r.image}' width='40' alt='${r.cast}' class='rounded'>`;
+			}
+		},
+		{
+			data: "title",
+			title: "title",
+			render: (v, t, r, m) => {
+				return `<h5 class='font-weight-bold'>${r.cast}</h5><p><i class='fas fa-lg fa-${r.mediaURL.match(/\.mp3/i) != null ? 'headphones' : 'tv'}'></i> ${v}</p>`;
+			}
+		},
+		{
+			data: "pubDate",
+			title: "published",
+			render: (v, t, r, m) => {
+				const dat = moment(v);
+				console.log(dat);
+				return `<span style='display:none'>${dat.valueOf()}</span><span>${dat.fromNow().replace(/\s+ago$/, '')}</span>`;
 			}
 		}
 	];
@@ -97,7 +126,7 @@ class QPHelper {
 			"width": "10%",
 			"render": function (val, typ, row, meta) {
 				const dat = moment(val);
-				return `<span style='display:none'>${dat.valueOf()}</span><span class='text-light'>${moment(val).fromNow().replace(/\s+ago$/, '')}</span><div title='refresh' class='text-light' style='cursor:pointer'><i class='fas fa-sync-alt'></i></div>`;
+				return `<span style='display:none'>${dat.valueOf()}</span><span class='text-light'>${dat.fromNow().replace(/\s+ago$/, '')}</span><div title='refresh' class='text-light' style='cursor:pointer'><i class='fas fa-sync-alt'></i></div>`;
 			}
 		},
 		{

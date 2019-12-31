@@ -372,7 +372,61 @@ class QuickPlayer {
 			this.mainTab.column(colno).search(srchWord).draw();
 		});
 		this.addContextMenu();
+		this.addSearch();
 		this.player = document.getElementById('player');
+		this.addPlayerControls();
+	}
+
+	addSearch() {
+		const $srchForm = $('#searchForm');
+		$srchForm.on('click', 'button', (e) => {
+			e.preventDefault();
+			if($srchForm.find('input').val().trim().length === 0) {
+				return;
+			}
+			this.renderSearchResult($srchForm.find('input').val().trim());
+		});
+	}
+
+	async renderSearchResult(kwd) {
+		console.log('search keyword', kwd);
+		const res = await fetch(this.uri_episodes + '/title/%25' + kwd + '%25');
+		const searchResults = await res.json();
+		for(let e of searchResults) {
+			let c = this.casts.find(i => i.podcastID === e.cast_episode);
+			e.cast = c.name;
+			e.image = c.imageURL;
+		}
+		console.log(searchResults);
+		const modal_html = await QPHelper.loadHTML('components/modal_bookmarks.html');
+		this.$modalWindow.html(modal_html);
+		this.$modalWindow.find('h5').html(`<h5><i class='fas fa-search'></i> Search results(keyword: ${kwd}, searched: ${searchResults.length})</h5>`)
+		//console.log(eps);
+		let dtOptions = QPHelper.getDTOptionsTemplate();
+		const spOptions = {
+			"data": searchResults,
+			"sDom": '<"search-box"r>lftip',
+			"columns": QPHelper.columnsSearch,
+			"order": [2, 'desc']
+		}
+		let $dtab = $('#tabEpisodes').DataTable({ ...dtOptions, ...spOptions });
+		$dtab.columns.adjust().responsive.recalc();
+		$dtab.on('click', 'tbody tr span[title=resume],tbody h5', (e) => {
+			const pdat = $dtab.row(e.currentTarget.closest('tr')).data();
+			const cast = this.casts.find(c => c.name == pdat.cast);
+			this.playEpisode(cast, pdat);
+			console.log(pdat);
+		});
+		$dtab.on('click', 'tbody tr i[title=delete]', (e) => {
+			const row = e.currentTarget.closest('tr');
+			QPHelper.deleteBookmark(QPHelper.storeKey, $dtab.row(row).data().mediaURL);
+			$dtab.row(row).remove().draw();
+		});
+		$('#spinner_modal').hide();
+		this.$modalWindow.modal('show');
+	}
+
+	addPlayerControls() {
 		$('div.btn-group button').on('click', e => {
 			const btn = e.currentTarget.querySelector('svg');
 			//console.log(btn);
@@ -405,7 +459,7 @@ class QuickPlayer {
 			QuickPlayer.iconToggle(true);
 			$playerToggler.addClass('blink_me');
 		};
-		this.player.onabort= e => {
+		this.player.onabort = e => {
 			$playerToggler.removeClass('blink_me');
 			QuickPlayer.iconToggle(false);
 		};
@@ -420,11 +474,11 @@ class QuickPlayer {
 			this.recordCurrent(false);
 		}
 
-		this.player.ontimeupdate = e=> {
-			if(isNaN(this.player.duration)) {
+		this.player.ontimeupdate = e => {
+			if (isNaN(this.player.duration)) {
 				return;
 			}
-			if(parseInt(this.player.currentTime) % 10 == 0) {
+			if (parseInt(this.player.currentTime) % 10 == 0) {
 				this.recordCurrent(true);
 			}
 			const pct = this.setProgressPercentage();
