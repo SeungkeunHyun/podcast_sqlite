@@ -297,26 +297,38 @@ class QuickPlayer {
 		const currentPage = document.location.href.replace(/\?.+$/, '');
 		$.contextMenu({
 			selector: '#tabCasts tbody tr',
+			name: 'Copy URL',
+			icon: 'copy',
+			callback: function (key, opt) {
+				const rdat = $mtab.row(this).data();
+				let queryString = '?'
+				switch(key) {
+					case 'copy_cast':
+						queryString += 'podcastID=' + rdat.podcastID;
+						break;
+					case 'copy_category':
+						queryString += 'category=' + rdat.category;
+						break;
+					case 'copy_provider':
+						queryString += 'provider=' + rdat.provider;
+						break;
+				}
+				$.copyToClipboard(currentPage + queryString);
+			},
 			items: {
-				copy_cast: {
-					name: "Copy cast URL",
-					callback: function (key, opt) {
-						const rdat = $mtab.row(this).data();
-						$.copyToClipboard(currentPage + '?podcastID=' + rdat.podcastID);
-					}
-				},
-				copy_category: {
-					name: "Copy category URL",
-					callback: function (key, opt) {
-						const rdat = $mtab.row(this).data();
-						$.copyToClipboard(currentPage + '?category=' + rdat.category);
-					}
-				},
-				copy_provider: {
-					name: "Copy provider URL",
-					callback: function (key, opt) {
-						const rdat = $mtab.row(this).data();
-						$.copyToClipboard(currentPage + '?provider=' + rdat.provider);
+				copy_url: {
+					name: "Copy URL",
+					icon: 'copy',
+					items: {
+						copy_cast: {
+							name: "Copy cast URL"
+						},
+						copy_category: {
+							name: "Copy category URL"
+						},
+						copy_provider: {
+							name: "Copy provider URL"
+						}
 					}
 				}
 			}
