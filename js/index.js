@@ -9,8 +9,9 @@ class QuickPlayer {
 	casts = [];
 	updatedCasts = [];
 	herokuFetcher = 'https://phpfetch.herokuapp.com/fetchURL.php';
+	queryParams = null;
 	constructor() {
-
+		this.queryParams = $.getQueryParams(document.location.href);
 	}
 
 	init() {
@@ -35,12 +36,29 @@ class QuickPlayer {
 		});
 	}
 
+	processQueryParams() {
+		console.log(this.queryParams);
+		if(this.queryParams.hasOwnProperty('category')) {
+			const $categoryFilter = $("a[data-colno=1]:contains(" + this.queryParams.category + ")");
+			if($categoryFilter.length) {
+				$categoryFilter[0].click();
+			}
+		}
+		if (this.queryParams.hasOwnProperty('provider')) {
+			const $categoryFilter = $("a[data-colno=0]:contains(" + this.queryParams.category + ")");
+			if ($categoryFilter.length) {
+				$categoryFilter[0].click();
+			}
+		}
+	}
+
 	async initializeUI() {
 		let dtOptions = QPHelper.getDTOptionsTemplate();
 		const spOptions = {
 			"data": this.casts,
 			"paging": false,
-			"scrollY": window.innerHeight - 250,
+			"scrollY": window.innerHeight - 100,
+	        "scrollCollapse": true,
 			"sDom": '<"search-box"r>lftip',
 			"columnDefs": [{ responsivePriority: 1, targets: 2 }, { responsivePriority: 2, targets: 3 }],
 			"columns": QPHelper.columnsCast,
@@ -49,6 +67,7 @@ class QuickPlayer {
 		this.mainTab = $("#tabCasts").DataTable({...dtOptions, ...spOptions});
 		this.mainTab.columns.adjust().responsive.recalc();
 		this.addEvents();
+		this.processQueryParams();
 		await this.fetchEpisodes();
 		console.log('updated casts', this.updatedCasts);
 		this.casts = this.casts.filter(i => !this.updatedCasts.includes(i.podcastID));
@@ -60,6 +79,13 @@ class QuickPlayer {
 			this.mainTab.clear();
 			this.mainTab.rows.add(this.casts).draw();
 		}
+		$(window).bind('resize', (e) => {
+			var NewHeight = $(document).height() - 260;
+			var oSettings = this.mainTab.fnSettings();
+			oSettings.oScroll.sY = NewHeight + "px";
+			console.log(oSettings.oScroll.sY);
+			this.mainTab.fnDraw();
+		});
 	}
 
 	async fetchCast(castID) {
@@ -142,7 +168,7 @@ class QuickPlayer {
 				break;
 			}
 		}
-		if(failCount == 0 && cast.provider !== 'itunes') {
+		if(episodes.length > 0 && failCount == 0 && cast.provider !== 'itunes') {
 			console.log(failCount, cast);
 			this.refreshEpisode(cast, page+1);
 		}
@@ -320,21 +346,23 @@ class QuickPlayer {
 				return;
 			}
 		});
+		const $playerToggler = $("#playerToggler");
 		this.player.onplay = e => {
+			$playerToggler.removeClass('d-none');
 			QuickPlayer.iconToggle(true);
-			$("#playerToggler").addClass('blink_me');
+			$playerToggler.addClass('blink_me');
 		};
 		this.player.onabort= e => {
-			$("#playerToggler").removeClass('blink_me');
+			$playerToggler.removeClass('blink_me');
 			QuickPlayer.iconToggle(false);
 		};
 		this.player.onpause = e => {
-			$("#playerToggler").removeClass('blink_me');
+			$playerToggler.removeClass('blink_me');
 			QuickPlayer.iconToggle(false);
 			this.recordCurrent(true);
 		};
 		this.player.onended = e => {
-			$("#playerToggler").removeClass('blink_me');
+			$playerToggler.removeClass('blink_me');
 			QuickPlayer.iconToggle(false);
 			this.recordCurrent(false);
 		}
