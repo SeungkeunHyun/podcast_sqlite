@@ -10,8 +10,10 @@ class QuickPlayer {
 	updatedCasts = [];
 	herokuFetcher = 'https://phpfetch.herokuapp.com/fetchURL.php';
 	queryParams = null;
+	$modalWindow = null;
 	constructor() {
 		this.queryParams = $.getQueryParams(document.location.href);
+		this.$modalWindow = $("#popCast");
 	}
 
 	init() {
@@ -31,23 +33,30 @@ class QuickPlayer {
 		$("#po-bookmarks").on('click', (e) => {
 			this.renderBookmarks($('#popCast'));
 		});
-		$("#popCast").on('hidden.bs.modal', function () {
+		this.$modalWindow.on('hidden.bs.modal', function () {
 			$(this).data('bs.modal', null);
 		});
 	}
 
 	processQueryParams() {
-		console.log(this.queryParams);
-		if(this.queryParams.hasOwnProperty('category')) {
-			const $categoryFilter = $("a[data-colno=1]:contains(" + this.queryParams.category + ")");
-			if($categoryFilter.length) {
-				$categoryFilter[0].click();
-			}
-		}
-		if (this.queryParams.hasOwnProperty('provider')) {
-			const $categoryFilter = $("a[data-colno=0]:contains(" + this.queryParams.category + ")");
-			if ($categoryFilter.length) {
-				$categoryFilter[0].click();
+		for(let k in this.queryParams) {
+			switch(k) {
+				case 'podcastID':
+					const cast = this.casts.find(c => c.podcastID == this.queryParams[k]);
+					this.renderCast(cast, this.$modalWindow);
+					return;
+				case 'category':
+					const $categoryFilter = $("a[data-colno=1]:contains(" + this.queryParams.category + ")");
+					if ($categoryFilter.length) {
+						$categoryFilter[0].click();
+					}
+					break;
+				case 'provider':
+					const $providerFilter = $("a[data-colno=0]:contains(" + this.queryParams.provider + ")");
+					if ($providerFilter.length) {
+						$providerFilter[0].click();
+					}
+					break;
 			}
 		}
 	}
@@ -283,11 +292,42 @@ class QuickPlayer {
 		return episodes.sort((a,b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
 	}
 
+	addContextMenu() {
+		const $mtab = this.mainTab;
+		const currentPage = document.location.href.replace(/\?.+$/, '');
+		$.contextMenu({
+			selector: '#tabCasts tbody tr',
+			items: {
+				copy_cast: {
+					name: "Copy cast URL",
+					callback: function (key, opt) {
+						const rdat = $mtab.row(this).data();
+						$.copyToClipboard(currentPage + '?podcastID=' + rdat.podcastID);
+					}
+				},
+				copy_category: {
+					name: "Copy category URL",
+					callback: function (key, opt) {
+						const rdat = $mtab.row(this).data();
+						$.copyToClipboard(currentPage + '?category=' + rdat.category);
+					}
+				},
+				copy_provider: {
+					name: "Copy provider URL",
+					callback: function (key, opt) {
+						const rdat = $mtab.row(this).data();
+						$.copyToClipboard(currentPage + '?provider=' + rdat.provider);
+					}
+				}
+			}
+		});
+	}
+
 	addEvents() {
 		this.mainTab.on('click', 'tbody tr td h5.media-heading,tbody tr td small', (e) => {
 			const row = e.currentTarget.closest('tr');
 			$('#spinner_modal').hide();
-			this.renderCast(this.mainTab.row(row).data(), $("#popCast"));
+			this.renderCast(this.mainTab.row(row).data(), this.$modalWindow);
 		});
 		this.mainTab.on('click', 'tbody tr td svg.fa-sync-alt', async (e) => {
 			const row = e.currentTarget.closest('tr');
@@ -319,6 +359,7 @@ class QuickPlayer {
 			$("div.dataTables_filter label").prepend($srchTag);
 			this.mainTab.column(colno).search(srchWord).draw();
 		});
+		this.addContextMenu();
 		this.player = document.getElementById('player');
 		$('div.btn-group button').on('click', e => {
 			const btn = e.currentTarget.querySelector('svg');
@@ -549,7 +590,7 @@ class QuickPlayer {
 		$('#ep-title').text(QPHelper.stringCut(ep.title, 30));
 		$('#ep-title').attr('title', ep.title);
 		$('#ep-image').attr('src', cast.imageURL).on('click', (e) => {
-			this.renderCast(cast, $("#popCast"));
+			this.renderCast(cast, this.$modalWindow);
 		});;
 		$('#ep-image').attr('title', cast.name);
 		this.player.setAttribute('src', ep.mediaURL);

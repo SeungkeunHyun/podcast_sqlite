@@ -34,6 +34,15 @@ jQuery.download = function (url, data, tgt) {
 	}
 };
 
+jQuery.copyToClipboard = function (text) {
+	var dummy = document.createElement("textarea");
+	document.body.appendChild(dummy);
+	dummy.value = text;
+	dummy.select();
+	document.execCommand("copy");
+	document.body.removeChild(dummy);
+}
+
 jQuery.getQueryParams = function (url) {
 	var qparams = {},
 		parts = (url || '').split('?'),
