@@ -11,6 +11,7 @@ class QuickPlayer {
 	herokuFetcher = 'https://phpfetch.herokuapp.com/fetchURL.php';
 	queryParams = null;
 	$modalWindow = null;
+	isMobile = window.orientation > -1;
 	constructor() {
 		this.queryParams = $.getQueryParams(document.location.href);
 		this.$modalWindow = $("#popCast");
@@ -77,6 +78,9 @@ class QuickPlayer {
 		this.mainTab.columns.adjust().responsive.recalc();
 		this.addEvents();
 		this.processQueryParams();
+		if(this.isMobile) {
+			return;
+		}
 		await this.fetchEpisodes();
 		console.log('updated casts', this.updatedCasts);
 		this.casts = this.casts.filter(i => !this.updatedCasts.includes(i.podcastID));
