@@ -2,7 +2,7 @@ class QPHelper {
 	static storeKey = 'qpBookmarks';
 	static htmlCache = {};
 	static getDTOptionsTemplate() {
-		return JSON.parse('{"authWidth": true, "responsive": true, "processing": true, "destroy": true, "deferRender": true, "fixedHeader": true}');
+		return JSON.parse('{"authWidth": true, "responsive": true, "processing": true, "destroy": true, "deferRender": true, "fixedHeader": true, "select": true}');
 	}
 	static columnsEpisode = [
 		{
@@ -10,7 +10,7 @@ class QPHelper {
 			"title": "title",
 			"render": function (val, typ, row, meta) {
 				return `<i class='fas fa-lg fa-${row.mediaURL.match(/\.mp3/i) != null ? 'headphones' : 'tv'}'></i><span style='cursor:pointer' class='bg_opaque_white' title='${val}' >${val} <i class='fas fa-play'></i></span>
-				${row.duration != null ? '<div class="font-weight-bold bg_opaque_white"><i class="fas fa-hourglass-start"></i>' + row.duration.replace(/^0+:/,'') + '</div>' : ''}
+				${row.duration != null ? '<div class="font-weight-bold bg_opaque_white"><i class="fas fa-hourglass-start"></i>' + (isNaN(row.duration.trim()) ? row.duration.replace(/^0+:/,'') : QPHelper.makeTimeInfo(row.duration.trim())) + '</div>' : ''}
 				`;
 			}
 		},
@@ -175,11 +175,14 @@ class QPHelper {
 		}
 		const jsonBM = JSON.parse(strBM);
 		delete jsonBM[recordKey];
-		console.log(jsonBM);
+		//console.log(jsonBM);
 		localStorage.setItem(storeKey, JSON.stringify(jsonBM));
 	}
 
 	static makeTimeInfo(ti) {
+		if(isNaN(ti)) {
+			return ti;
+		}
 		const dur = moment.duration(ti * 1000);
 		return (dur.hours() == 0 ? '' : dur.hours() + ':') + (dur.minutes() == 0 ? '' : dur.minutes() + ':') + dur.seconds();
 	}

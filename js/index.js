@@ -563,6 +563,9 @@ class QuickPlayer {
 							</div>
                             </div>`
 		$md.find('h5.modal-title').html(header);
+		$md.find('div.modal-content').css('background-image', 'linear-gradient(rgba(255,255,255,0.4), rgba(255,255,255,0.4)), url(' + cast.imageURL + ')');
+		$md.find('div.modal-content').css('background-size', 'cover');
+		$md.modal('show');
 		fetch(this.uri_episodes + '/cast_episode/' + cast.podcastID)
 		.then(res => {
 			if(res.ok) 
@@ -590,13 +593,30 @@ class QuickPlayer {
 			});
 			this.episodeTab.columns.adjust().responsive.recalc();
 			$('#spinner_modal').hide();
+			this.selectPlayingRow($dtab, cast);
 		});
-		if(this.episodeTab) {
-			this.episodeTab.clear().draw();
+	}
+
+	selectPlayingRow($dtab, cast) {
+		if(this.player.src === null) {
+			return;
 		}
-		$md.find('div.modal-content').css('background-image', 'linear-gradient(rgba(255,255,255,0.4), rgba(255,255,255,0.4)), url(' + cast.imageURL + ')');
-		$md.find('div.modal-content').css('background-size', 'cover');
-		$md.modal('show');
+		const $p = $(this.player);
+		if($p.data('cast').podcastID !== cast.podcastID) {
+			return;
+		}
+		console.log(cast, this.player.src);
+		let pg = 0;
+		this.episodeTab.rows().every(function(ridx, tl, rl) {
+			if(this.data().mediaURL === $p.data('episode').mediaURL) {
+				console.log($dtab.page, this, ridx, tl, rl);
+				this.select();
+				pg = Math.floor(rl / $dtab.page.len());
+				return;
+			}
+		});
+		console.log('current page', pg);
+		$dtab.page(pg).draw(false);
 	}
 
 	async renderBookmarks($md) {
