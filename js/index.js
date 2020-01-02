@@ -572,6 +572,9 @@ class QuickPlayer {
 				return res.json();
 		})
 		.then(eps => {
+			if(this.episodeTab !== null) {
+				this.episodeTab.clear().draw();
+			}
 			let dtOptions = QPHelper.getDTOptionsTemplate();
 			const spOptions = {
 				"data": eps,
