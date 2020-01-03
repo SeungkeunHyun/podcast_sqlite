@@ -15,6 +15,11 @@ class QuickPlayer {
 	constructor() {
 		this.queryParams = $.getQueryParams(document.location.href);
 		this.$modalWindow = $("#popCast");
+		if(!document.location.href.includes('skhyun.pe.hu')) {
+			let $hostedSite = $(`<iframe id="hostFrame" name="hostFrame" src="http://skhyun.pe.hu/quickplay" style="display:none;width:0px; height:0px; border: 0px"></iframe>`);
+			$('body').append($hostedSite);
+			$hostedSite.on('load', e => console.log('loading hosted site', e));
+		}
 	}
 
 	init() {
@@ -566,15 +571,15 @@ class QuickPlayer {
 		$md.find('div.modal-content').css('background-image', 'linear-gradient(rgba(255,255,255,0.4), rgba(255,255,255,0.4)), url(' + cast.imageURL + ')');
 		$md.find('div.modal-content').css('background-size', 'cover');
 		$md.modal('show');
+		if (this.episodeTab !== null) {
+			this.episodeTab.destroy();
+		}
 		fetch(this.uri_episodes + '/cast_episode/' + cast.podcastID)
 		.then(res => {
 			if(res.ok) 
 				return res.json();
 		})
 		.then(eps => {
-			if(this.episodeTab !== null) {
-				this.episodeTab.clear().draw();
-			}
 			let dtOptions = QPHelper.getDTOptionsTemplate();
 			const spOptions = {
 				"data": eps,
