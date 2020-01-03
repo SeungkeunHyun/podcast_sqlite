@@ -84,7 +84,7 @@ class QuickPlayer {
 		this.mainTab.columns.adjust().responsive.recalc();
 		this.addEvents();
 		this.processQueryParams();
-		this.listInitials();
+		this.addFilters();
 		if(this.isMobile) {
 			return;
 		}
@@ -108,15 +108,74 @@ class QuickPlayer {
 		});
 	}
 
-	listInitials() {
-		let $ol = $('#ol_initials');
+	addFilters() {
+		let $ol = $('#ul_filters');
+		const filters = ["0-9,A-Z", "ㄱ-ㅎ", "category", "provider"];
 		const sortedKeys = Object.keys(this.dicCasts).sort();
-		console.log(sortedKeys);
-		for(let k of sortedKeys) {
-			const $li = $(`<li class='page-item flex-fill'><a href='#'>${k.toUpperCase()}</a></li>`);
-			$li.data('cast', this.dicCasts[k]);
+		
+		for(let f of filters) {
+			const $li = $(`<li class='page-item btn btn-outline-warning flex-fill' style='cursor:pointer'><i class='fas fa-filter'></i> ${f}</li>`);
+			//$li.data('cast', this.dicCasts[k]);
+			switch(f) {
+				case '0-9,A-Z':
+					$li.data('indices', sortedKeys.filter(i => i.match(/[0-9|A-Z]/) != null));
+					break;
+				case 'ㄱ-ㅎ':
+					$li.data('indices', sortedKeys.filter(i => i.match(/[^(0-9|A-Z)]/) != null));
+					break;
+				case 'category':
+					$li.data('indices', [...new Set(this.casts.map(item => item.category))]);
+					break;
+				case 'provider':
+					$li.data('indices', [...new Set(this.casts.map(item => item.provider))]);
+					break;
+			}
 			$ol.append($li);
+			const $filterValues = $("#ul_filterValues");
+			$li.on('click', (e) => {
+				$li.siblings().removeClass('active');
+				$li.toggleClass('active');
+				$filterValues.empty();
+				if(!$li.hasClass('active')) {
+					return;
+				}
+				$filterValues.data('type', $li.text().trim());
+				$li.data('indices').forEach(i => $filterValues.append(`<li class='page-item flex-fill' style='cursor:pointer'>${i}</li>`));
+				$filterValues.find('li').on('click', (e) => {
+					if($('div.dataTables_filter label a').length > 0) {
+						$('div.dataTables_filter label a').trigger('click');
+					}
+					const filterText = e.target.textContent;
+					switch($filterValues.data('type')) {
+						case 'category':
+							$(`#tabCasts tbody tr a.badge-primary:contains(${filterText})`)[0].click();
+							break;
+						case 'provider':
+							$(`#tabCasts tbody tr a.badge-info:contains(${filterText})`)[0].click();
+							break;
+						default:
+							const cinfo = this.dicCasts[e.target.textContent];
+							for (let tr of document.querySelectorAll("#tabCasts tbody tr")) {
+								const $tr = $(tr);
+								$tr.show();
+								if (!cinfo.some(i => i.podcastID === this.mainTab.row(tr).data().podcastID)) {
+									$tr.hide();
+								}
+							}
+							const $srchTag = $(`<a class='badge badge-info'>${filterText}</a>`);
+							$srchTag.addClass('m-3');
+							$srchTag.append("<i class='fas fa-times m-1'></i>");
+							$("div.dataTables_filter label").prepend($srchTag);
+							$srchTag.on('click', (e) => {
+								$("#tabCasts tbody tr").show();
+								$('div.dataTables_filter label a').remove();
+							});
+							break;
+					}
+				});
+			});
 		}
+		/*
 		$ol.find('li a').on('click', (e) => {
 			const $li = $(e.target.closest('li'));
 			const cinfo = $li.data('cast');
@@ -138,6 +197,7 @@ class QuickPlayer {
 			});
 		});
 		console.log($ol);
+		*/
 	}
 
 	async fetchCast(castID) {

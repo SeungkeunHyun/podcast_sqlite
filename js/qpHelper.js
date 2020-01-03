@@ -133,7 +133,7 @@ class QPHelper {
 								</div>
 								<div class='media-footer text-right'>
 									<a href='#' data-colno='1' class='badge badge-primary'>${row.category}</a>
-									<a href='#' data-colno='0' class='badge badge-secondary'>${row.provider}</a>
+									<a href='#' data-colno='0' class='badge badge-info'>${row.provider}</a>
 								</div>
 							</div>
                         </div>`;
