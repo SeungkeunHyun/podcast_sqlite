@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "dark-mode-switch": "^1.0.0",
+    "hangul-js": "^0.2.6",
     "jquery": "^3.4.1",
     "jquery-contextmenu": "^2.9.0",
     "js-alert": "^1.0.4",

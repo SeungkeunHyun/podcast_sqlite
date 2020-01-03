@@ -31,6 +31,7 @@ class QuickPlayer {
 		})
 		.then( async(data) => {
 			this.casts = data;
+			this.dicCasts = QPHelper.generateCastInitials(this.casts);
 			await this.initializeUI();
 			$('#spinner').hide();
 		}).catch(ex => {
@@ -83,6 +84,7 @@ class QuickPlayer {
 		this.mainTab.columns.adjust().responsive.recalc();
 		this.addEvents();
 		this.processQueryParams();
+		this.listInitials();
 		if(this.isMobile) {
 			return;
 		}
@@ -104,6 +106,38 @@ class QuickPlayer {
 			console.log(oSettings.oScroll.sY);
 			this.mainTab.fnDraw();
 		});
+	}
+
+	listInitials() {
+		let $ol = $('#ol_initials');
+		const sortedKeys = Object.keys(this.dicCasts).sort();
+		console.log(sortedKeys);
+		for(let k of sortedKeys) {
+			const $li = $(`<li class='page-item flex-fill'><a href='#'>${k.toUpperCase()}</a></li>`);
+			$li.data('cast', this.dicCasts[k]);
+			$ol.append($li);
+		}
+		$ol.find('li a').on('click', (e) => {
+			const $li = $(e.target.closest('li'));
+			const cinfo = $li.data('cast');
+			for(let tr of document.querySelectorAll("#tabCasts tbody tr")) {
+				const $tr = $(tr);
+				$tr.show();
+				if(!cinfo.some(i => i.podcastID === this.mainTab.row(tr).data().podcastID)) {
+					$tr.hide();
+				} 
+			}
+			$('div.dataTables_filter label a').remove();
+			const $srchTag = $(`<a class='badge badge-info'>${$li.text()}</a>`);
+			$srchTag.addClass('m-3');
+			$srchTag.append("<i class='fas fa-times m-1'></i>");
+			$("div.dataTables_filter label").prepend($srchTag);
+			$srchTag.on('click', (e) => {
+				$("#tabCasts tbody tr").show();
+				$('div.dataTables_filter label a').remove();
+			});
+		});
+		console.log($ol);
 	}
 
 	async fetchCast(castID) {

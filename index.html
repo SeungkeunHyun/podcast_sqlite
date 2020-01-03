@@ -22,6 +22,7 @@
 	<script type="text/javascript" src="node_modules/js-alert/dist/jsalert.min.js"></script>
 	<script type="text/javascript" src="node_modules/dark-mode-switch/dark-mode-switch.min.js"></script>
 	<script type="text/javascript" src="node_modules/jquery-contextmenu/dist/jquery.contextMenu.min.js"></script>
+	<script type="text/javascript" src="node_modules/hangul-js/hangul.min.js"></script>
 	<script type="text/javascript" src="js/index.js"></script>
 	<script type="text/javascript" src="js/jquery_extension.js"></script>
 	<script type="text/javascript" src="js/qpHelper.js"></script>
@@ -82,6 +83,9 @@
 		</nav>
 	</div>
 	<div class="container-fluid content mt-3">
+		<nav aria-label="Page navigation example" class="table-responsive mb-2">
+			<ul id="ol_initials" class="pagination pagination-lg mb-0"></ul>
+		</nav>
 		<div id="divPodcasts" style="display:block">
 			<table id="tabCasts" class="table responsive compact dispaly table-sm dataTable dtr-inline" style="width:100%">
 				<thead>

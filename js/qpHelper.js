@@ -30,6 +30,26 @@ class QPHelper {
 			}
 		}
 	];
+
+	static generateCastInitials(casts) {
+		let initials = {};
+		let i = null;
+		for(let c of casts) {
+			for(i of Hangul.disassemble(c.name)) {
+				if(!['[', '"', "'", ' '].includes(i)) {
+					break;
+				}
+			}
+			i = i.toUpperCase();
+			if(!initials.hasOwnProperty(i)) {
+				initials[i] = [];
+			}
+			initials[i].push(c);
+		}
+		console.log(initials);
+		return initials;
+	}
+
 	static columnsBookmark = [
 		{
 			data: "cast",
