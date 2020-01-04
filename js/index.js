@@ -112,7 +112,6 @@ class QuickPlayer {
 		let $ol = $('#ul_filters');
 		const filters = ["0-9,A-Z", "ㄱ-ㅎ", "category", "provider"];
 		const sortedKeys = Object.keys(this.dicCasts).sort();
-		
 		for(let f of filters) {
 			const $li = $(`<li class='page-item btn btn-outline-warning flex-fill' style='cursor:pointer'><i class='fas fa-filter'></i> ${f}</li>`);
 			//$li.data('cast', this.dicCasts[k]);
@@ -148,28 +147,13 @@ class QuickPlayer {
 					const filterText = e.target.textContent;
 					switch($filterValues.data('type')) {
 						case 'category':
-							$(`#tabCasts tbody tr a.badge-primary:contains(${filterText})`)[0].click();
+							this.filterColumn(1, filterText);
 							break;
 						case 'provider':
-							$(`#tabCasts tbody tr a.badge-info:contains(${filterText})`)[0].click();
+							this.filterColumn(0, filterText);
 							break;
 						default:
-							const cinfo = this.dicCasts[e.target.textContent];
-							for (let tr of document.querySelectorAll("#tabCasts tbody tr")) {
-								const $tr = $(tr);
-								$tr.show();
-								if (!cinfo.some(i => i.podcastID === this.mainTab.row(tr).data().podcastID)) {
-									$tr.hide();
-								}
-							}
-							const $srchTag = $(`<a class='badge badge-info'>${filterText}</a>`);
-							$srchTag.addClass('m-3');
-							$srchTag.append("<i class='fas fa-times m-1'></i>");
-							$("div.dataTables_filter label").prepend($srchTag);
-							$srchTag.on('click', (e) => {
-								$("#tabCasts tbody tr").show();
-								$('div.dataTables_filter label a').remove();
-							});
+							this.filterColumn(5, filterText);
 							break;
 					}
 				});
@@ -456,28 +440,35 @@ class QuickPlayer {
 			$icon.removeClass('fa-spin');
 		});
 		this.mainTab.on('click', 'tbody tr td div.media-footer a', async (e) => {
-			const $srchBtn = $(e.currentTarget);
-			let colno = parseInt($srchBtn.attr('data-colno'));
-			const srchWord = $srchBtn.text();
-			if ($(`div.dataTables_filter label a:contains('${srchWord}')`).length) {
-				return;
-			}
-			this.mainTab.column(colno).search('').draw();
-			let $srchTag = $srchBtn.clone();
-			$srchTag.addClass('m-3');
-			$srchTag.append("<i class='fas fa-times m-1'></i>");
-			$srchTag.on('click', (e) => {
-				colno = parseInt(e.currentTarget.getAttribute('data-colno'));
-				this.mainTab.column(colno).search('').draw();
-				e.currentTarget.remove();
-			});
-			$("div.dataTables_filter label").prepend($srchTag);
-			this.mainTab.column(colno).search(srchWord).draw();
+			const colno = parseInt(e.currentTarget.getAttribute('col-no'));
+			this.filterColumn(colno, e.currentTarget.textContent.trim());
 		});
 		this.addContextMenu();
 		this.addSearch();
 		this.player = document.getElementById('player');
 		this.addPlayerControls();
+	}
+
+	filterColumn(colno, srchWord) {
+		const col_classes = ['primary', 'success', 'info', 'warning', 'secondary', 'danger'];
+		const $filterLabel = $('div.dataTables_filter label');
+		if ($filterLabel.find(`a:contains('${srchWord}')`).length) {
+			return;
+		}
+		if ($filterLabel.find(`a[data-colno=${colno}]`).length) {
+			$filterLabel.find(`a[data-colno=${colno}]`).trigger('click');
+		}
+		this.mainTab.column(colno).search('').draw();
+		let $srchTag = $(`<a data-colno='${colno}' class='m-1 text-light font-weight-bold bg-${col_classes[colno]}'>${srchWord}<i class='fas fa-times m-1'></i></a>`)
+		$("div.dataTables_filter label").prepend($srchTag);
+		$srchTag.on('click', (e) => {
+			colno = parseInt(e.currentTarget.getAttribute('data-colno'));
+			this.mainTab.column(colno).search('').draw();
+			e.currentTarget.remove();
+			console.log(e);
+		});
+		console.log($srchTag);
+		this.mainTab.column(colno).search(srchWord).draw();
 	}
 
 	addSearch() {
@@ -700,7 +691,7 @@ class QuickPlayer {
 	}
 
 	selectPlayingRow($dtab, cast) {
-		if(this.player.src === null) {
+		if(!this.player.attributes.hasOwnProperty('src')) {
 			return;
 		}
 		const $p = $(this.player);

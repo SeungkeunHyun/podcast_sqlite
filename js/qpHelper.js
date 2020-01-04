@@ -31,16 +31,20 @@ class QPHelper {
 		}
 	];
 
+	static getInitialOfTitle(title) {
+		let i = null;
+		for (i of Hangul.disassemble(title)) {
+			if (!i.match(/\s|\[|'|"/)) {
+				break;
+			}
+		}
+		return i.toUpperCase();
+	}
+
 	static generateCastInitials(casts) {
 		let initials = {};
-		let i = null;
 		for(let c of casts) {
-			for(i of Hangul.disassemble(c.name)) {
-				if(!['[', '"', "'", ' '].includes(i)) {
-					break;
-				}
-			}
-			i = i.toUpperCase();
+			let i = this.getInitialOfTitle(c.name);
 			if(!initials.hasOwnProperty(i)) {
 				initials[i] = [];
 			}
@@ -152,6 +156,14 @@ class QPHelper {
 			"data": "episodes",
 			"title": "episodes",
 			"visible": false
+		}, 
+		{
+			"data": "name",
+			"title": "initial",
+			"visible": false,
+			"render": function (val, typ, row, meta) {
+				return QPHelper.getInitialOfTitle(val);
+			}
 		}
 	];
 
