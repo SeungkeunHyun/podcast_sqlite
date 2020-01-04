@@ -455,15 +455,13 @@ class QuickPlayer {
 		if ($filterLabel.find(`a:contains('${srchWord}')`).length) {
 			return;
 		}
-		if ($filterLabel.find(`a[data-colno=${colno}]`).length) {
-			$filterLabel.find(`a[data-colno=${colno}]`).trigger('click');
-		}
+		$filterLabel.find('a').remove();
 		this.mainTab.column(colno).search('').draw();
 		let $srchTag = $(`<a data-colno='${colno}' class='m-1 text-light font-weight-bold bg-${col_classes[colno]}'>${srchWord}<i class='fas fa-times m-1'></i></a>`)
 		$("div.dataTables_filter label").prepend($srchTag);
-		$srchTag.on('click', (e) => {
+		$srchTag.on('click', async (e) => {
 			colno = parseInt(e.currentTarget.getAttribute('data-colno'));
-			this.mainTab.column(colno).search('').draw();
+			await this.mainTab.column(colno).search('').draw();
 			e.currentTarget.remove();
 			console.log(e);
 		});
