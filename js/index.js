@@ -141,9 +141,6 @@ class QuickPlayer {
 				$filterValues.data('type', $li.text().trim());
 				$li.data('indices').forEach(i => $filterValues.append(`<li class='page-item flex-fill' style='cursor:pointer'>${i}</li>`));
 				$filterValues.find('li').on('click', (e) => {
-					if($('div.dataTables_filter label a').length > 0) {
-						$('div.dataTables_filter label a').trigger('click');
-					}
 					const filterText = e.target.textContent;
 					switch($filterValues.data('type')) {
 						case 'category':
@@ -440,7 +437,7 @@ class QuickPlayer {
 			$icon.removeClass('fa-spin');
 		});
 		this.mainTab.on('click', 'tbody tr td div.media-footer a', async (e) => {
-			const colno = parseInt(e.currentTarget.getAttribute('col-no'));
+			const colno = parseInt(e.currentTarget.getAttribute('data-colno'));
 			this.filterColumn(colno, e.currentTarget.textContent.trim());
 		});
 		this.addContextMenu();
@@ -450,18 +447,17 @@ class QuickPlayer {
 	}
 
 	filterColumn(colno, srchWord) {
-		const col_classes = ['primary', 'success', 'info', 'warning', 'secondary', 'danger'];
 		const $filterLabel = $('div.dataTables_filter label');
 		if ($filterLabel.find(`a:contains('${srchWord}')`).length) {
 			return;
 		}
-		$filterLabel.find('a').remove();
+		$filterLabel.find(`a[data-colno='${colno}']`).remove();
 		this.mainTab.column(colno).search('').draw();
-		let $srchTag = $(`<a data-colno='${colno}' class='m-1 text-light font-weight-bold bg-${col_classes[colno]}'>${srchWord}<i class='fas fa-times m-1'></i></a>`)
+		let $srchTag = $(`<a data-colno='${colno}' class='m-1 text-light font-weight-bold bg-${QPHelper.col_classes[colno]}'>${srchWord}<i class='fas fa-times m-1'></i></a>`)
 		$("div.dataTables_filter label").prepend($srchTag);
 		$srchTag.on('click', async (e) => {
 			colno = parseInt(e.currentTarget.getAttribute('data-colno'));
-			await this.mainTab.column(colno).search('').draw();
+			this.mainTab.column(colno).search('').draw();
 			e.currentTarget.remove();
 			console.log(e);
 		});

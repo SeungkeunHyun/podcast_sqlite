@@ -1,6 +1,7 @@
 class QPHelper {
 	static storeKey = 'qpBookmarks';
 	static htmlCache = {};
+	static col_classes = ['primary', 'success', 'info', 'warning', 'secondary', 'danger'];
 	static getDTOptionsTemplate() {
 		return JSON.parse('{"authWidth": true, "responsive": true, "processing": true, "destroy": true, "deferRender": true, "fixedHeader": true, "select": true}');
 	}
@@ -136,8 +137,8 @@ class QPHelper {
 									<small title='${row.summary}'>${row.summary == null ? '' : QPHelper.stringCut(row.summary, 80)}<br/><span class='text-right'>last update: ${row.lastPubAt == null ? '' : row.lastPubAt.slice(0, -3)}</small>
 								</div>
 								<div class='media-footer text-right'>
-									<a href='#' data-colno='1' class='badge badge-primary'>${row.category}</a>
-									<a href='#' data-colno='0' class='badge badge-info'>${row.provider}</a>
+									<a data-colno='1' class='font-weight-bold font-light bg-${QPHelper.col_classes[1]}'>${row.category}</a>
+									<a data-colno='0' class='font-weight-bold font-light bg-${QPHelper.col_classes[0]}'>${row.provider}</a>
 								</div>
 							</div>
                         </div>`;
