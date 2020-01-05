@@ -156,29 +156,6 @@ class QuickPlayer {
 				});
 			});
 		}
-		/*
-		$ol.find('li a').on('click', (e) => {
-			const $li = $(e.target.closest('li'));
-			const cinfo = $li.data('cast');
-			for(let tr of document.querySelectorAll("#tabCasts tbody tr")) {
-				const $tr = $(tr);
-				$tr.show();
-				if(!cinfo.some(i => i.podcastID === this.mainTab.row(tr).data().podcastID)) {
-					$tr.hide();
-				} 
-			}
-			$('div.dataTables_filter label a').remove();
-			const $srchTag = $(`<a class='badge badge-info'>${$li.text()}</a>`);
-			$srchTag.addClass('m-3');
-			$srchTag.append("<i class='fas fa-times m-1'></i>");
-			$("div.dataTables_filter label").prepend($srchTag);
-			$srchTag.on('click', (e) => {
-				$("#tabCasts tbody tr").show();
-				$('div.dataTables_filter label a').remove();
-			});
-		});
-		console.log($ol);
-		*/
 	}
 
 	async fetchCast(castID) {
