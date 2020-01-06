@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,8 +10,8 @@
 	<link rel="shortcut icon" href="images/favicon.ico">
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
 	<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/v/bs4/dt-1.10.20/af-2.3.4/b-1.6.1/cr-1.5.2/fc-3.3.0/fh-3.1.6/r-2.2.3/sc-2.0.1/sl-1.3.1/datatables.min.css" />
-	<link rel="stylesheet" type="text/css" href="node_modules/@fortawesome/fontawesome-free/css/fontawesome.min.css"/>
-	<link rel="stylesheet" type="text/css" href="node_modules/dark-mode-switch/dark-mode.css"/>
+	<link rel="stylesheet" type="text/css" href="node_modules/@fortawesome/fontawesome-free/css/fontawesome.min.css" />
+	<link rel="stylesheet" type="text/css" href="node_modules/dark-mode-switch/dark-mode.css" />
 	<link rel="stylesheet" type="text/css" href="node_modules/jquery-contextmenu/dist/jquery.contextMenu.min.css" />
 	<link rel="stylesheet" type="text/css" href="css/index.css" />
 	<script type="text/javascript" src="node_modules/jquery/dist/jquery.min.js"></script>
@@ -27,81 +28,78 @@
 	<script type="text/javascript" src="js/jquery_extension.js"></script>
 	<script type="text/javascript" src="js/qpHelper.js"></script>
 </head>
+
 <body data-theme='dark'>
-	<div>
-		<div class="collapse bg-dark" id="playerToggle">
-			<div class="media" id="divPlayer">
-				<div class="media-left mr-5"><img id="ep-image" style="cursor:pointer" class="media-object rounded" width="80px"></div>
-				<div class="media-body m-0">
-					<div class="row">
-						<h5 class="mt-0 text-wrap text-light" id="ep-title" width="50%"></h5>
+	<div class="collapse bg-dark" id="playerToggle">
+		<div class="media" id="divPlayer">
+			<div class="media-left mr-5"><img id="ep-image" style="cursor:pointer" class="media-object rounded" width="80px"></div>
+			<div class="media-body m-0">
+				<div class="row">
+					<h5 class="mt-0 text-wrap text-light" id="ep-title" width="50%"></h5>
+				</div>
+				<div class="row">
+					<div class="btn-group d-flex p-1 col-8" role="group" aria-label="Basic example">
+						<button class="btn bg-dark" role="button"><i class="fas fa-backward fa-lg text-light"></i></button>
+						<button class="btn bg-dark" role="button"><i class="fas fa-pause fa-lg text-light"></i></button>
+						<button class="btn bg-dark" role="button"><i class="fas fa-forward fa-lg text-light"></i></button>
+						<button class="btn bg-dark" role="button"><i class="fas fa-download fa-lg text-light"></i></button>
 					</div>
-					<div class="row">
-						<div class="btn-group d-flex p-1 col-8" role="group" aria-label="Basic example">
-							<button class="btn bg-dark" role="button"><i class="fas fa-backward fa-lg text-light"></i></button>
-							<button class="btn bg-dark" role="button"><i class="fas fa-pause fa-lg text-light"></i></button>
-							<button class="btn bg-dark" role="button"><i class="fas fa-forward fa-lg text-light"></i></button>
-							<button class="btn bg-dark" role="button"><i class="fas fa-download fa-lg text-light"></i></button>
-						</div>
-						<div class="col-4 p-1">
-							<span id="progressStat" class="text-light col-5 ml-2"></span>
-						</div>
+					<div class="col-4 p-1">
+						<span id="progressStat" class="text-light col-5 ml-2"></span>
 					</div>
-					<div class="row">
-						<div class="progress col-12 text-right pl-0" width="100%">
-							<div class="progress-bar text-dark mr-10" id="playerProgress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-						</div>
+				</div>
+				<div class="row">
+					<div class="progress col-12 text-right pl-0" width="100%">
+						<div class="progress-bar text-dark" id="playerProgress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
 					</div>
 				</div>
 			</div>
-			<video id="player" class="d-none" autoplay></video>
 		</div>
-		<nav class="navbar navbar-expand-sm navbar-dark bg-dark">
-			<a class="navbar-brand" href="#">닭쳐 QP</a>
-			<a id="playerToggler" class="nav-link text-light font-weight-bold dropdown-toggle d-none" type="button" data-toggle="collapse" data-target="#playerToggle" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle player">
-				<span><i class="far fa-play-circle"></i> Player</span>
-			</a>
-			<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-				<span class="navbar-toggler-icon"></span>
-			</button>
-			<div class="collapse navbar-collapse" id="navbarSupportedContent">
-				<ul class="navbar-nav mr-auto text-right">
-					<li class="nav-item active">
-						<button class="btn text-light" id="po-bookmarks"><i class="fas fa-bookmark"></i> Bookmarks</button>
-					</li>
-					<!--//
+		<video id="player" class="d-none" autoplay></video>
+	</div>
+	<nav class="navbar navbar-expand-sm navbar-dark bg-dark">
+		<a class="navbar-brand" href="#">닭쳐 QP</a>
+		<a id="playerToggler" class="nav-link text-light font-weight-bold dropdown-toggle d-none" type="button" data-toggle="collapse" data-target="#playerToggle" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle player">
+			<span><i class="far fa-play-circle"></i> Player</span>
+		</a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="collapse navbar-collapse" id="navbarSupportedContent">
+			<ul class="navbar-nav mr-auto text-right">
+				<li class="nav-item active">
+					<button class="btn text-light" id="po-bookmarks"><i class="fas fa-bookmark"></i> Bookmarks</button>
+				</li>
+				<!--//
 					<li class="nav-item">
 						<a class="nav-link" href="#">Pricing</a>
 					</li>
 					//-->
-				</ul>
-			</div>
-			<form id="searchForm" class="form-inline my-2 my-lg-0">
-				<input id="searchInput" class="form-control mr-sm-2" type="search" placeholder="Search episodes" aria-label="Search">
-				<button class="btn btn-outline-success my-2 my-sm-0" type="submit"><i class="fas fa-search"></i></button>
-			</form>
-		</nav>
-	</div>
-	<div class="container-fluid content mt-3">
-		<nav aria-label="Page navigation example" class="table-responsive mb-2">
-			<ul id="ul_filters" class="pagination pagination-lg mb-0"></ul>
-			<ul id="ul_filterValues" class="pagination pagination-lg mb-0"></ul>
-		</nav>
-		<div id="divPodcasts" style="display:block">
-			<table id="tabCasts" class="table responsive compact dispaly table-sm dataTable dtr-inline" style="width:100%">
-				<thead>
-					<th>provider</th>
-					<th>category</th>
-					<th>name</th>
-					<th>last pub at</th>
-					<th>episodes</th>
-					<th>initial</th>
-				</thead>
-			</table>
+			</ul>
 		</div>
+		<form id="searchForm" class="form-inline my-2 my-lg-0">
+			<input id="searchInput" class="form-control mr-sm-2" type="search" placeholder="Search episodes" aria-label="Search">
+			<button class="btn btn-outline-success my-2 my-sm-0" type="submit"><i class="fas fa-search"></i></button>
+		</form>
+	</nav>
+	<nav aria-label="Page navigation example" class="table-responsive mb-2 mt-3">
+		<ul id="ul_filters" class="pagination pagination-lg mb-0"></ul>
+		<ul id="ul_filterValues" class="pagination pagination-lg mb-0"></ul>
+	</nav>
+	<div id="divPodcasts" style="display:block">
+		<table id="tabCasts" class="table responsive compact dispaly table-sm dataTable dtr-inline" style="width:100%">
+			<thead>
+				<th>provider</th>
+				<th>category</th>
+				<th>name</th>
+				<th>last pub at</th>
+				<th>episodes</th>
+				<th>initial</th>
+			</thead>
+		</table>
 	</div>
 	<div class="d-flex justify-content-center">
-		<div class="spinner-border" role="status"  id="spinner">
+		<div class="spinner-border" role="status" id="spinner">
 			<span class="sr-only">Loading...</span>
 		</div>
 	</div>
@@ -109,4 +107,5 @@
 	<div id="popCast" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
 	</div>
 </body>
+
 </html>

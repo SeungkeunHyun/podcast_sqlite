@@ -108,7 +108,7 @@ class QPHelper {
 			data: "pubDate",
 			title: "published",
 			render: (v, t, r, m) => {
-				const dat = moment.utc(val).local();
+				const dat = moment.utc(v).local();
 				return `<span style='display:none'>${dat.valueOf()}</span><span>${dat.fromNow().replace(/\s+ago$/, '')}</span>`;
 			}
 		}
