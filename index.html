@@ -32,27 +32,25 @@
 <body data-theme='dark'>
 	<div class="collapse bg-dark" id="playerToggle">
 		<div class="media" id="divPlayer">
-			<div class="media-left mr-5"><img id="ep-image" style="cursor:pointer" class="media-object rounded" width="80px"></div>
-			<div class="media-body m-0">
-				<div class="row">
-					<h5 class="mt-0 text-wrap text-light" id="ep-title" width="50%"></h5>
-				</div>
+			<div class="media-left mr-4"><img id="ep-image" style="cursor:pointer" class="media-object rounded" width="80px"></div>
+			<div class="media-body">
+				<h5 class="mt-0 text-wrap text-light" id="ep-title" width="50%"></h5>
 				<div class="row">
 					<div class="btn-group d-flex p-1 col-8" role="group" aria-label="Basic example">
-						<button class="btn bg-dark" role="button"><i class="fas fa-backward fa-lg text-light"></i></button>
-						<button class="btn bg-dark" role="button"><i class="fas fa-pause fa-lg text-light"></i></button>
-						<button class="btn bg-dark" role="button"><i class="fas fa-forward fa-lg text-light"></i></button>
-						<button class="btn bg-dark" role="button"><i class="fas fa-download fa-lg text-light"></i></button>
+						<button class="btn btn-outline-light bg-dark" role="button"><i class="fas fa-backward fa-lg text-light"></i></button>
+						<button class="btn btn-outline-light bg-dark" role="button"><i class="fas fa-pause fa-lg text-light"></i></button>
+						<button class="btn btn-outline-light bg-dark" role="button"><i class="fas fa-forward fa-lg text-light"></i></button>
+						<button class="btn btn-outline-light bg-dark" role="button"><i class="fas fa-download fa-lg text-light"></i></button>
 					</div>
-					<div class="col-4 p-1">
-						<span id="progressStat" class="text-light col-5 ml-2"></span>
-					</div>
-				</div>
-				<div class="row">
-					<div class="progress col-12 text-right pl-0" width="100%">
-						<div class="progress-bar text-dark" id="playerProgress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+					<div class="col-4 p-1 d-flex">
+						<span id="progressStat" class="text-light ml-2"></span>
 					</div>
 				</div>
+			</div>
+		</div>
+		<div class="row mt-1">
+			<div class="progress col-12 text-right pl-0" width="100%">
+				<div class="progress-bar text-dark" id="playerProgress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
 			</div>
 		</div>
 		<video id="player" class="d-none" autoplay></video>
