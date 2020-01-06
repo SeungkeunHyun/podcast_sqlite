@@ -137,8 +137,8 @@ class QPHelper {
 									<small title='${row.summary}'>${row.summary == null ? '' : QPHelper.stringCut(row.summary, 80)}<br/><span class='text-right'>last update: ${row.lastPubAt == null ? '' : row.lastPubAt.slice(0, -3)}</small>
 								</div>
 								<div class='media-footer text-right'>
-									<a data-colno='1' class='font-weight-bold font-light bg-${QPHelper.col_classes[1]}'>${row.category}</a>
-									<a data-colno='0' class='font-weight-bold font-light bg-${QPHelper.col_classes[0]}'>${row.provider}</a>
+									<a data-colno='1' class='font-weight-bold badge font-light bg-${QPHelper.col_classes[1]}'>${row.category}</a>
+									<a data-colno='0' class='font-weight-bold badge font-light bg-${QPHelper.col_classes[0]}'>${row.provider}</a>
 								</div>
 							</div>
                         </div>`;

@@ -430,7 +430,7 @@ class QuickPlayer {
 		}
 		$filterLabel.find(`a[data-colno='${colno}']`).remove();
 		this.mainTab.column(colno).search('').draw();
-		let $srchTag = $(`<a data-colno='${colno}' class='m-1 text-light font-weight-bold bg-${QPHelper.col_classes[colno]}'>${srchWord}<i class='fas fa-times m-1'></i></a>`)
+		let $srchTag = $(`<a data-colno='${colno}' class='m-1 badge text-light font-weight-bold bg-${QPHelper.col_classes[colno]}'>${srchWord}<i class='fas fa-times m-1'></i></a>`)
 		$("div.dataTables_filter label").prepend($srchTag);
 		$srchTag.on('click', async (e) => {
 			colno = parseInt(e.currentTarget.getAttribute('data-colno'));
