@@ -620,7 +620,7 @@ class QuickPlayer {
 		const header = `<div class="media text-right">
                             <!--// <div class="media-left"><img src="${cast.imageURL}" class="media-object rounded" width="60px"></div> //-->
 							<div class="media-body"><h5 class="media-heading mt-0 font-weight-bold">${cast.name} <span class="badge badge-info">${cast.episodes}</span></h5>
-							<small class='font-weight-bold'>last update: ${cast.lastPubAt.slice(0,-3)}</small>
+							<small class='font-weight-bold'>last update: ${moment(cast.lastPubAt).add(9, 'hours').format('YY/MM/DD HH:mm')}</small>
 							</div>
                             </div>`
 		$md.find('h5.modal-title').html(header);

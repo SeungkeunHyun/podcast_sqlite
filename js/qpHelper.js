@@ -19,7 +19,7 @@ class QPHelper {
 			"data": "pubDate",
 			"title": "published",
 			"render": function (val, typ, row, meta) {
-				const dat = moment.utc(val).local();
+				const dat = moment.utc(val).add(9, 'hours');
 				return `<span style='display:none'>${dat.valueOf()}</span><span class='bg_opaque_white' title='${val}'>${moment(val).fromNow()}</span>`;
 			}
 		},
@@ -134,7 +134,7 @@ class QPHelper {
 							<div class='media-body p-1'><h5 class='media-heading'>${val} <span class='badge badge-info'>${row.episodes}</span></h5>
 								<div class='media-content'>
 									${(row.author && row.author !== val) ? '<small>by <span class="font-weight-bold">' + row.author + '</span></small><br/>' : ''}
-									<small title='${row.summary}'>${row.summary == null ? '' : QPHelper.stringCut(row.summary, 80)}<br/><span class='text-right'>last update: ${row.lastPubAt == null ? '' : row.lastPubAt.slice(0, -3)}</small>
+									<small title='${row.summary}'>${row.summary == null ? '' : QPHelper.stringCut(row.summary, 80)}<br/><span class='text-right'>last update: ${row.lastPubAt == null ? '' : moment(row.lastPubAt).add(9, 'hours').format('YY/MM/DD HH:mm')}</small>
 								</div>
 								<div class='media-footer text-right'>
 									<a data-colno='1' class='font-weight-bold badge font-light bg-${QPHelper.col_classes[1]}'>${row.category}</a>
@@ -157,7 +157,7 @@ class QPHelper {
 			"data": "episodes",
 			"title": "episodes",
 			"visible": false
-		}, 
+		},
 		{
 			"data": "name",
 			"title": "initial",
