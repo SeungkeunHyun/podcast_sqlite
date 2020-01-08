@@ -402,9 +402,9 @@ class QuickPlayer {
 			$('#spinner_modal').hide();
 			this.renderCast(this.mainTab.row(row).data(), this.$modalWindow);
 		});
-		this.mainTab.on('click', 'tbody tr td svg.fa-sync-alt', async (e) => {
+		this.mainTab.on('click', 'tbody tr td span.lead', async (e) => {
 			const row = e.currentTarget.closest('tr');
-			const $icon = $(e.currentTarget);
+			const $icon = $(e.currentTarget.querySelector('svg'));
 			$icon.addClass('fa-spin');
 			const cdat = this.mainTab.row(row).data();
 			await this.refreshEpisode(cdat,1);
@@ -673,7 +673,7 @@ class QuickPlayer {
 		let pg = 0;
 		this.episodeTab.rows().every(function(ridx, tl, rl) {
 			if(this.data().mediaURL === $p.data('episode').mediaURL) {
-				console.log($dtab.page, this, ridx, tl, rl);
+				//console.log($dtab.page, this, ridx, tl, rl);
 				this.select();
 				pg = Math.floor(rl / $dtab.page.len());
 				return;
@@ -763,7 +763,7 @@ class QuickPlayer {
 			return;
 		}
 		const r = bm[p.src];
-		console.log('src', p.src, 'record', r);
+		//console.log('src', p.src, 'record', r);
 		if(bm != null &&  r != null) {
 			p.currentTime = r.currentTime;
 		}

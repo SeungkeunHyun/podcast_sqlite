@@ -150,7 +150,7 @@ class QPHelper {
 			"width": "10%",
 			"render": function (val, typ, row, meta) {
 				const dat = moment.utc(val).local();
-				return `<span style='display:none'>${dat.valueOf()}</span><span class='text-light'>${dat.fromNow().replace(/\s+ago$/, '')}</span><div title='refresh' class='text-light' style='cursor:pointer'><i class='fas fa-sync-alt'></i></div>`;
+				return `<span style='display:none'>${dat.valueOf()}</span><span class='lead text-light'>${dat.fromNow().replace(/\s+ago$/, '')} <i class='fas fa-sync-alt'></i></span>`;
 			}
 		},
 		{
