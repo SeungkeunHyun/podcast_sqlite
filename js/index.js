@@ -18,6 +18,7 @@ class QuickPlayer {
 		if(!document.location.href.includes('skhyun.pe.hu')) {
 			let $hostedSite = $(`<iframe id="hostFrame" name="hostFrame" src="http://skhyun.pe.hu/quickplay" style="display:none;width:0px; height:0px; border: 0px"></iframe>`);
 			$('body').append($hostedSite);
+			$hostedSite.unbind();
 			$hostedSite.on('load', e => console.log('loading hosted site', e));
 		}
 	}
@@ -37,9 +38,11 @@ class QuickPlayer {
 		}).catch(ex => {
 			console.error(ex);
 		});
+		$("#po-bookmarks").unbind();
 		$("#po-bookmarks").on('click', (e) => {
 			this.renderBookmarks($('#popCast'));
 		});
+		this.$modalWindow.unbind();
 		this.$modalWindow.on('hidden.bs.modal', function () {
 			$(this).data('bs.modal', null);
 		});
@@ -131,6 +134,7 @@ class QuickPlayer {
 			}
 			$ol.append($li);
 			const $filterValues = $("#ul_filterValues");
+			$li.unbind();
 			$li.on('click', (e) => {
 				$li.siblings().removeClass('active');
 				$li.toggleClass('active');
@@ -397,6 +401,7 @@ class QuickPlayer {
 	}
 
 	addEvents() {
+		this.mainTab.unbind();
 		this.mainTab.on('click', 'tbody tr td h5.media-heading,tbody tr td small', async (e) => {
 			const row = e.currentTarget.closest('tr');
 			$('#spinner_modal').hide();
@@ -625,6 +630,7 @@ class QuickPlayer {
 	}
 
 	async renderCast(cast, $md) {
+		$md.empty();
 		const modal_html = await QPHelper.loadHTML('components/modal_episodes.html');
 		$md.html(modal_html);
 		const header = `<div class="media text-right">
@@ -638,7 +644,7 @@ class QuickPlayer {
 		$md.find('div.modal-content').css('background-size', 'cover');
 		$md.modal('show');
 		if (this.episodeTab !== null) {
-			this.episodeTab.destroy();
+			this.episodeTab.clear();
 		}
 		const res = await fetch(this.uri_episodes + '/cast_episode/' + cast.podcastID)
 		const eps = await res.json();
@@ -735,6 +741,8 @@ class QuickPlayer {
 	playEpisode(cast, ep) {
 		if (this.player != null && !this.player.paused) {
 			this.player.pause();
+		} else {
+			this.player = document.querySelector('#player');
 		}
 		console.log(ep);
 		if (ep.mediaURL.match(/\.mp3/i) == null) {
@@ -749,6 +757,7 @@ class QuickPlayer {
 		this.player.src = ep.mediaURL;
 		$('#ep-title').text(QPHelper.stringCut(ep.title, 30));
 		$('#ep-title').attr('title', ep.title);
+		$('#ep-image').unbind();
 		$('#ep-image').attr('src', cast.imageURL).on('click', async (e) => {
 			await this.renderCast(cast, this.$modalWindow);
 		});;
