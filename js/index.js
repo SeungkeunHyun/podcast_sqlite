@@ -45,12 +45,12 @@ class QuickPlayer {
 		});
 	}
 
-	processQueryParams() {
+	async processQueryParams() {
 		for(let k in this.queryParams) {
 			switch(k) {
 				case 'podcastID':
 					const cast = this.casts.find(c => c.podcastID == this.queryParams[k]);
-					this.renderCast(cast, this.$modalWindow);
+					await this.renderCast(cast, this.$modalWindow);
 					return;
 				case 'category':
 					const $categoryFilter = $("a[data-colno=1]:contains(" + this.queryParams.category + ")");
@@ -83,7 +83,7 @@ class QuickPlayer {
 		this.mainTab = $("#tabCasts").DataTable({...dtOptions, ...spOptions});
 		this.mainTab.columns.adjust().responsive.recalc();
 		this.addEvents();
-		this.processQueryParams();
+		await this.processQueryParams();
 		this.addFilters();
 		if(this.isMobile) {
 			return;
@@ -397,10 +397,10 @@ class QuickPlayer {
 	}
 
 	addEvents() {
-		this.mainTab.on('click', 'tbody tr td h5.media-heading,tbody tr td small', (e) => {
+		this.mainTab.on('click', 'tbody tr td h5.media-heading,tbody tr td small', async (e) => {
 			const row = e.currentTarget.closest('tr');
 			$('#spinner_modal').hide();
-			this.renderCast(this.mainTab.row(row).data(), this.$modalWindow);
+			await this.renderCast(this.mainTab.row(row).data(), this.$modalWindow);
 		});
 		this.mainTab.on('click', 'tbody tr td span.lead', async (e) => {
 			const row = e.currentTarget.closest('tr');
@@ -496,7 +496,17 @@ class QuickPlayer {
 			const btn = e.currentTarget.querySelector('svg');
 			//console.log(btn);
 			if (btn.classList.contains('fa-play')) {
-				this.player.play();
+				const prom = this.player.play();
+				if(prom) { 
+					prom.then(e =>  {
+						console.log(e);
+					}).catch(e => {
+						const ctime = this.player.currentTime;
+						this.player.load();
+						this.player.play();
+						this.player.currentTime = ctime;
+					});
+				}
 				return;
 			}
 			if (btn.classList.contains('fa-forward')) {
@@ -630,35 +640,30 @@ class QuickPlayer {
 		if (this.episodeTab !== null) {
 			this.episodeTab.destroy();
 		}
-		fetch(this.uri_episodes + '/cast_episode/' + cast.podcastID)
-		.then(res => {
-			if(res.ok) 
-				return res.json();
-		})
-		.then(eps => {
-			let dtOptions = QPHelper.getDTOptionsTemplate();
-			const spOptions = {
-				"data": eps,
-				"sDom": '<"search-box"r>lftip',
-				"oLanguage": { sProcessing: "<div id='loader'></div>" },
-				"columns": QPHelper.columnsEpisode,
-				"order": [1, 'desc']
-			}
-			this.episodeTab = $('#tabEpisodes').DataTable({...dtOptions, ...spOptions});
-			const $dtab = this.episodeTab;
-			this.episodeTab.on('click', 'tbody tr td span', (e) => {
-				const pdat = $dtab.row(e.currentTarget.closest('tr')).data();
-				this.playEpisode(cast, pdat);
-				console.log(pdat);
-			});
-			this.episodeTab.on('click', 'tbody tr td button', (e) => {
-				const pdat = $dtab.row(e.currentTarget.closest('tr')).data();
-				QuickPlayer.download(cast, pdat);
-			});
-			this.episodeTab.columns.adjust().responsive.recalc();
-			$('#spinner_modal').hide();
-			this.selectPlayingRow($dtab, cast);
+		const res = await fetch(this.uri_episodes + '/cast_episode/' + cast.podcastID)
+		const eps = await res.json();
+		let dtOptions = QPHelper.getDTOptionsTemplate();
+		const spOptions = {
+			"data": eps,
+			"sDom": '<"search-box"r>lftip',
+			"oLanguage": { sProcessing: "<div id='loader'></div>" },
+			"columns": QPHelper.columnsEpisode,
+			"order": [1, 'desc']
+		}
+		this.episodeTab = $('#tabEpisodes').DataTable({...dtOptions, ...spOptions});
+		//const $dtab = this.episodeTab;
+		this.episodeTab.on('click', 'tbody tr td span', (e) => {
+			const pdat = this.episodeTab.row(e.currentTarget.closest('tr')).data();
+			this.playEpisode(cast, pdat);
+			console.log(pdat);
 		});
+		this.episodeTab.on('click', 'tbody tr td button', (e) => {
+			const pdat = this.episodeTab.row(e.currentTarget.closest('tr')).data();
+			QuickPlayer.download(cast, pdat);
+		});
+		this.episodeTab.columns.adjust().responsive.recalc();
+		$('#spinner_modal').hide();
+		this.selectPlayingRow(this.episodeTab, cast);
 	}
 
 	selectPlayingRow($dtab, cast) {
@@ -731,6 +736,7 @@ class QuickPlayer {
 		if (this.player != null && !this.player.paused) {
 			this.player.pause();
 		}
+		console.log(ep);
 		if (ep.mediaURL.match(/\.mp3/i) == null) {
 			if($("#player").hasClass('d-none')) {
 				$("#player").removeClass('d-none');
@@ -743,8 +749,8 @@ class QuickPlayer {
 		this.player.src = ep.mediaURL;
 		$('#ep-title').text(QPHelper.stringCut(ep.title, 30));
 		$('#ep-title').attr('title', ep.title);
-		$('#ep-image').attr('src', cast.imageURL).on('click', (e) => {
-			this.renderCast(cast, this.$modalWindow);
+		$('#ep-image').attr('src', cast.imageURL).on('click', async (e) => {
+			await this.renderCast(cast, this.$modalWindow);
 		});;
 		$('#ep-image').attr('title', cast.name);
 		this.player.setAttribute('src', ep.mediaURL);
