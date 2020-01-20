@@ -401,7 +401,6 @@ class QuickPlayer {
 	}
 
 	addEvents() {
-		this.mainTab.unbind();
 		this.mainTab.on('click', 'tbody tr td h5.media-heading,tbody tr td small', async (e) => {
 			const row = e.currentTarget.closest('tr');
 			$('#spinner_modal').hide();
@@ -741,10 +740,8 @@ class QuickPlayer {
 	playEpisode(cast, ep) {
 		if (this.player != null && !this.player.paused) {
 			this.player.pause();
-		} else {
-			this.player = document.querySelector('#player');
 		}
-		console.log(ep);
+		//console.log(ep);
 		if (ep.mediaURL.match(/\.mp3/i) == null) {
 			if($("#player").hasClass('d-none')) {
 				$("#player").removeClass('d-none');
