@@ -314,6 +314,9 @@ class QuickPlayer {
 					ep.title = itm.querySelector("title").textContent.trim();
 					ep.pubDate = new Date(itm.querySelector("pubDate").textContent).toISOString();
 					ep.mediaURL = itm.querySelector("enclosure").getAttribute("url");
+					if (ep.mediaURL === 'http://kbspodcastad.kbs.co.kr/cgi-bin/podcast.fcgi/kbsaod/') {
+						return;
+					}
 					if (itm.querySelector("summary"))
 						ep.summary = itm.querySelector("summary").textContent.trim();
 					if (itm.querySelector("duration")) {
@@ -436,7 +439,7 @@ class QuickPlayer {
 		this.mainTab.column(colno).search('').draw();
 		let $srchTag = $(`<a data-colno='${colno}' class='m-1 badge text-light font-weight-bold bg-${QPHelper.col_classes[colno]}'>${srchWord}<i class='fas fa-times m-1'></i></a>`)
 		$("div.dataTables_filter label").prepend($srchTag);
-		$srchTag.on('click', async (e) => {
+		$filterLabel.find(`a:contains('${srchWord}')`).on('click', async (e) => {
 			colno = parseInt(e.currentTarget.getAttribute('data-colno'));
 			this.mainTab.column(colno).search('').draw();
 			e.currentTarget.remove();
