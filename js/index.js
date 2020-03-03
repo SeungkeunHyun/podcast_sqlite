@@ -49,12 +49,14 @@ class QuickPlayer {
 	}
 
 	async processQueryParams() {
+		let cast = null;
 		for(let k in this.queryParams) {
+			console.log('param', k);
 			switch(k) {
 				case 'podcastID':
-					const cast = this.casts.find(c => c.podcastID == this.queryParams[k]);
+					cast = this.casts.find(c => c.podcastID == this.queryParams[k]);
 					await this.renderCast(cast, this.$modalWindow);
-					return;
+					continue;
 				case 'category':
 					const $categoryFilter = $("a[data-colno=1]:contains(" + this.queryParams.category + ")");
 					if ($categoryFilter.length) {
@@ -269,24 +271,30 @@ class QuickPlayer {
 				recCast.summary = $dat.find('#podcast_summary').attr('title');
 				recCast.imageURL = $dat.find('#podcast_thumb img').attr('src').replace(/\?.+$/, '');
 				recCast.author = recCast.name;
-				const scriptStart = "var ischsell";
-				const scriptEnd = "if(episode_uids";
+				const scriptStart = `[{"uid":`;
+				const scriptEnd = `, 'N');`;
 				const strSrc = src + "";
-				const scriptBody = src.substring(src.indexOf(scriptStart), src.indexOf(scriptEnd, src.indexOf(scriptStart)));
-				let episode = {};
-				let episode_uids = [];
-				eval(scriptBody);
-				Object.keys(episode).forEach((key) => {
-					//console.log(key, episode[key]);
-					if (episode[key].down_file.match(/paidcontent/i) != null) {
-						return;
-					}
-					ep = {};
-					ep.mediaURL = episode[key].down_file;
-					ep.title = episode[key].title;
-					ep.pubDate = moment(episode[key].pubdate, 'YYYYMMDD').format('YYYY-MM-DD');
-					episodes.push(ep);
-				});
+				let scriptBody = src.substring(src.indexOf(scriptStart), src.indexOf(scriptEnd, src.indexOf(scriptStart)));
+				//console.log('scriptBody', scriptBody);
+				try {
+					let pb_episodes = JSON.parse(scriptBody);
+					pb_episodes = pb_episodes.map(i => JSON.parse(decodeURIComponent(JSON.stringify(i))));
+					console.log(pb_episodes);
+					pb_episodes.forEach(pbep=> {
+						//console.log(key, episode[key]);
+						if (pbep.down_file.match(/paidcontent/i) != null) {
+							return;
+						}
+						ep = {};
+						ep.mediaURL = pbep.down_file;
+						ep.title = pbep.title;
+						ep.pubDate = moment(pbep.pubdate, 'YYYYMMDD').format('YYYY-MM-DD');
+						episodes.push(ep);
+					});
+					console.log(episodes);
+				} catch(ex) {
+					console.log(ex);
+				}
 				break;
 			case 'podty':
 				$el = $(src);
@@ -399,6 +407,27 @@ class QuickPlayer {
 						}
 					}
 				}
+			}
+		});
+	}
+
+	addEpisodeContextMenu(castId) {
+		const $mtab = $('#tabEpisodes').DataTable();
+		const currentPage = document.location.href.replace(/\?.+$/, '');
+		$.contextMenu({
+			selector: '#tabEpisodes tbody tr',
+			name: 'Copy URL',
+			icon: 'copy',
+			callback: function (key, opt) {
+				const rdat = $mtab.row(this).data();
+				console.log(rdat);
+				let queryString = '?'
+				queryString += 'podcastID=' + rdat.cast_episode + '&mediaURL=' + rdat.mediaURL.trim();
+				console.log(currentPage + queryString);
+				$.copyToClipboard(currentPage + queryString);
+			},
+			items: {
+				'copy': {name: 'copy URL', icon: 'copy'}
 			}
 		});
 	}
@@ -669,9 +698,16 @@ class QuickPlayer {
 			const pdat = this.episodeTab.row(e.currentTarget.closest('tr')).data();
 			QuickPlayer.download(cast, pdat);
 		});
+		if(this.queryParams.hasOwnProperty('mediaURL')) {
+			console.log(this.episodeTab.data());
+			const ep = Array.from(this.episodeTab.data()).find(e => e.mediaURL === this.queryParams['mediaURL']);
+			console.log(ep);
+			this.playEpisode(cast, ep);
+		}
 		this.episodeTab.columns.adjust().responsive.recalc();
 		$('#spinner_modal').hide();
 		this.selectPlayingRow(this.episodeTab, cast);
+		this.addEpisodeContextMenu(cast.castID);
 	}
 
 	selectPlayingRow($dtab, cast) {
