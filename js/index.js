@@ -267,9 +267,9 @@ class QuickPlayer {
 					dataType: cast.provider == 'itunes' ? 'xml' : 'html'
 				});
 				const $dat = $(data);
-				recCast.name = $dat.find('#all_title p')[0].textContent.trim();
-				recCast.summary = $dat.find('#podcast_summary').attr('title');
-				recCast.imageURL = $dat.find('#podcast_thumb img').attr('src').replace(/\?.+$/, '');
+				recCast.name = $dat.find('h3.title')[0].textContent.trim();
+				recCast.summary = $dat.find('div.description')[0].textContent;
+				recCast.imageURL = $dat.find('div.podcast-details__podcast img').attr('src').replace(/\?.+$/, '');
 				recCast.author = recCast.name;
 				const scriptStart = `[{"uid":`;
 				const scriptEnd = `, 'N');`;
@@ -278,8 +278,8 @@ class QuickPlayer {
 				//console.log('scriptBody', scriptBody);
 				try {
 					let pb_episodes = JSON.parse(scriptBody);
-					pb_episodes = pb_episodes.map(i => JSON.parse(decodeURIComponent(JSON.stringify(i))));
-					console.log(pb_episodes);
+					console.log(pb_episodes);					
+					//pb_episodes = pb_episodes.map(i => JSON.parse(decodeURIComponent(JSON.stringify(i))));
 					pb_episodes.forEach(pbep=> {
 						//console.log(key, episode[key]);
 						if (pbep.down_file.match(/paidcontent/i) != null) {
@@ -420,9 +420,8 @@ class QuickPlayer {
 			icon: 'copy',
 			callback: function (key, opt) {
 				const rdat = $mtab.row(this).data();
-				console.log(rdat);
-				let queryString = '?'
-				queryString += 'podcastID=' + rdat.cast_episode + '&mediaURL=' + rdat.mediaURL.trim();
+				console.log(this, rdat);
+				let queryString = '?podcastID=' + rdat.cast_episode + '&mediaURL=' + rdat.mediaURL.trim();
 				console.log(currentPage + queryString);
 				$.copyToClipboard(currentPage + queryString);
 			},

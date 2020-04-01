@@ -35,12 +35,17 @@ jQuery.download = function (url, data, tgt) {
 };
 
 jQuery.copyToClipboard = function (text) {
-	var dummy = document.createElement("textarea");
-	document.body.appendChild(dummy);
+	console.log(this, text);
+	let dummy = document.createElement("textarea");
+	let pnode = document.body;
+	if($('div.modal.show').length) {
+		pnode = $('div.modal.show')[0];
+	} 
+	pnode.appendChild(dummy);
 	dummy.value = text;
 	dummy.select();
 	document.execCommand("copy");
-	document.body.removeChild(dummy);
+	pnode.removeChild(dummy);
 }
 
 jQuery.getQueryParams = function (url) {
