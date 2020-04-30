@@ -11,13 +11,13 @@
   "dependencies": {
     "dark-mode-switch": "^1.0.0",
     "hangul-js": "^0.2.6",
-    "jquery": "^3.4.1",
+    "jquery": "^3.5.0",
     "jquery-contextmenu": "^2.9.0",
     "js-alert": "^1.0.4",
     "moment": "^2.24.0",
     "popper.js": "^1.16.1"
   },
   "devDependencies": {
-    "@fortawesome/fontawesome-free": "^5.12.1"
+    "@fortawesome/fontawesome-free": "^5.13.0"
   }
 }
