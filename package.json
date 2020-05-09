@@ -11,10 +11,10 @@
   "dependencies": {
     "dark-mode-switch": "^1.0.0",
     "hangul-js": "^0.2.6",
-    "jquery": "^3.5.0",
-    "jquery-contextmenu": "^2.9.0",
+    "jquery": "^3.5.1",
+    "jquery-contextmenu": "^2.9.1",
     "js-alert": "^1.0.4",
-    "moment": "^2.24.0",
+    "moment": "^2.25.3",
     "popper.js": "^1.16.1"
   },
   "devDependencies": {

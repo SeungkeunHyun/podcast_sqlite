@@ -670,9 +670,12 @@ class QuickPlayer {
 							</div>
                             </div>`
 		$md.find('h5.modal-title').html(header);
-		$md.find('div.modal-content').css('background-image', 'linear-gradient(rgba(255,255,255,0.4), rgba(255,255,255,0.4)), url(' + cast.imageURL + ')');
-		$md.find('div.modal-content').css('background-size', 'cover');
+		const $divContent = $md.find('div.modal-content');		
 		$md.modal('show');
+		$divContent.css('background-image', 'linear-gradient(rgba(255,255,255,0.4), rgba(255,255,255,0.4)), url(' + cast.imageURL + ')');
+		$divContent.css('background-repeat', 'no-repeat');
+		$divContent.css('background-size', '100% 100%');
+		$divContent.css('background-position', 'center center');
 		if (this.episodeTab !== null) {
 			this.episodeTab.clear();
 		}
