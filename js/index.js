@@ -676,6 +676,10 @@ class QuickPlayer {
 		$divContent.css('background-repeat', 'no-repeat');
 		$divContent.css('background-size', '100% 100%');
 		$divContent.css('background-position', 'center center');
+		$divContent.css('border-radius', '10px');
+		$divContent.css('max-height', 'calc(80vh - 140px)');
+		$divContent.css('overflow-y', 'scroll');
+	
 		if (this.episodeTab !== null) {
 			this.episodeTab.clear();
 		}
