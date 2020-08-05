@@ -39,7 +39,9 @@ class QuickPlayer {
 			console.error(ex);
 		});
 		$("#po-bookmarks").unbind();
+		console.info('starts to add bookmarks feature');
 		$("#po-bookmarks").on('click', (e) => {
+			console.log(e);
 			this.renderBookmarks($('#popCast'));
 		});
 		this.$modalWindow.unbind();
@@ -86,6 +88,11 @@ class QuickPlayer {
 			"order": [3, 'desc']
 		};
 		this.mainTab = $("#tabCasts").DataTable({...dtOptions, ...spOptions});
+		/*
+		this.mainTab.rows.forEach(r => {
+			this.refreshEpisode(r.data(), 1);
+		});
+		*/
 		this.mainTab.columns.adjust().responsive.recalc();
 		this.addEvents();
 		await this.processQueryParams();
@@ -93,13 +100,15 @@ class QuickPlayer {
 		if(this.isMobile) {
 			return;
 		}
+		
 		await this.fetchEpisodes();
-		console.log('updated casts', this.updatedCasts);
+		//console.log('updated casts', this.updatedCasts);
 		this.casts = this.casts.filter(i => !this.updatedCasts.includes(i.podcastID));
 		for(var c of this.updatedCasts) {
 			const updCast = await this.fetchCast(c);
 			this.casts.push(updCast);
 		}
+		console.log("updated casts", this.updatedCasts.length);
 		if(this.updatedCasts.length) {
 			this.mainTab.clear();
 			this.mainTab.rows.add(this.casts).draw();
@@ -111,6 +120,7 @@ class QuickPlayer {
 			console.log(oSettings.oScroll.sY);
 			this.mainTab.fnDraw();
 		});
+		$('#tabCasts').find('tbody tr i').trigger('click');
 	}
 
 	addFilters() {
@@ -490,8 +500,21 @@ class QuickPlayer {
 
 	async renderSearchResult(kwd) {
 		console.log('search keyword', kwd);
-		const res = await fetch(this.uri_episodes + '/title/%25' + kwd + '%25');
-		const searchResults = await res.json();
+		let searchResults = [];
+		let res = null;
+		if (kwd.match(/\s/)) {
+			let skwd = kwd.trim().replace(/\s/g, '%25');
+			res = await fetch(this.uri_episodes + '/title/%25' + skwd + '%25');
+			searchResults = await res.json();
+			skwd = kwd.split(' ').reverse().join('%25');
+			res = await fetch(this.uri_episodes + '/title/%25' + skwd + '%25');
+			searchResults.concat(await res.json());
+
+		} else {
+			res = await fetch(this.uri_episodes + '/title/%25' + kwd + '%25');
+			const searchResults = await res.json();
+		}
+		
 		for(let e of searchResults) {
 			let c = this.casts.find(i => i.podcastID === e.cast_episode);
 			e.cast = c.name;
@@ -740,6 +763,7 @@ class QuickPlayer {
 
 	async renderBookmarks($md) {
 		let bookmarks = QuickPlayer.getBookmarks();
+		console.log(bookmarks);
 		if(bookmarks == null) {
 			return;
 		}
@@ -776,7 +800,7 @@ class QuickPlayer {
 	}
 
 	static getBookmarks() {
-		if(localStorage.getItem(this.storeKey)) {
+		if(localStorage.getItem(QPHelper.storeKey)) {
 			return JSON.parse(localStorage.getItem(QPHelper.storeKey));
 		}
 		return null;
