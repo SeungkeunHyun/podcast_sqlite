@@ -309,7 +309,7 @@ class QuickPlayer {
 			case 'podty':
 				$el = $(src);
 				recCast.name = $el.filter('title').text().trim();
-				recCast.summary = $el.find('div.intro p')[0].textContent.trim();
+				recCast.summary = $el.find('div.intro pre')[0].textContent.trim();
 				recCast.imageURL = $el.find('div.thumbnail img').attr('src').trim();
 				recCast.feedURL = $el.find('li.btnCopyRSS').attr('data-clipboard-text').trim();
 				recCast.author = $el.find('ul.subInfo li')[0].querySelector('strong').textContent.trim();
