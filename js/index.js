@@ -185,7 +185,7 @@ class QuickPlayer {
 	getFetchURL(cast) {
 		switch(cast.provider) {
 			case 'podbbang':
-				return 'http://www.podbbang.com/podbbangchnew/episode_list?id=' + cast.podcastID;
+				return 'http://www.podbbang.com/_m_api/podcasts/' + cast.podcastID + '/episodes?offset=0&sort=pubdate:desc&limit=30&cache=0'
 				break;
 			case 'podty':
 				return 'https://www.podty.me/cast/' + cast.podcastID;
@@ -281,24 +281,29 @@ class QuickPlayer {
 				recCast.summary = $dat.find('div.description')[0].textContent;
 				recCast.imageURL = $dat.find('div.podcast-details__podcast img').attr('src').replace(/\?.+$/, '');
 				recCast.author = recCast.name;
+				/*
 				const scriptStart = `[{"uid":`;
 				const scriptEnd = `, 'N');`;
 				const strSrc = src + "";
 				let scriptBody = src.substring(src.indexOf(scriptStart), src.indexOf(scriptEnd, src.indexOf(scriptStart)));
 				//console.log('scriptBody', scriptBody);
+				*/
+				//console.log('fetched podbbang episodes', src);
 				try {
-					let pb_episodes = JSON.parse(scriptBody);
-					console.log(pb_episodes);					
+					let pb_episodes = JSON.parse(src);
+					//console.log("podbbang episodes", pb_episodes);					
 					//pb_episodes = pb_episodes.map(i => JSON.parse(decodeURIComponent(JSON.stringify(i))));
-					pb_episodes.forEach(pbep=> {
+					pb_episodes.data.forEach(pbep=> {
 						//console.log(key, episode[key]);
-						if (pbep.down_file.match(/paidcontent/i) != null) {
+						if (!pbep.is_free) {
 							return;
 						}
 						ep = {};
-						ep.mediaURL = pbep.down_file;
+						ep.mediaURL = pbep.enclosure.url;
 						ep.title = pbep.title;
-						ep.pubDate = moment(pbep.pubdate, 'YYYYMMDD').format('YYYY-MM-DD');
+						ep.subtitle = pbep.description;
+						ep.duration = pbep.duration;
+						ep.pubDate = pbep.published_at;
 						episodes.push(ep);
 					});
 					console.log(episodes);
