@@ -206,8 +206,12 @@ class QuickPlayer {
 	async refreshEpisode(cast, page) {
 		let fetchURL = this.getFetchURL(cast);
 		if(page != 1) {
-			fetchURL += fetchURL.indexOf('?') == -1 ? '?' : '&';
-			fetchURL += 'page=' + page;
+			if(fetchURL.indexOf("offset=") > -1) {
+				fetchURL.replace(/offset=\n+/, "offset=" + ((page - 1) * 30));
+			} else {
+				fetchURL += fetchURL.indexOf('?') == -1 ? '?' : '&';
+				fetchURL += 'page=' + page;
+			}
 		}
 		//console.log(c, c.feedURL);
 		const data = await $.ajax({

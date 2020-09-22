@@ -14,7 +14,7 @@
     "jquery": "^3.5.1",
     "jquery-contextmenu": "^2.9.2",
     "js-alert": "^1.0.4",
-    "moment": "^2.27.0",
+    "moment": "^2.29.0",
     "popper.js": "^1.16.1"
   },
   "devDependencies": {
