@@ -1,7 +1,7 @@
 class QuickPlayer {
-	uri_vcast = '/php/rest-sqlite/index.php/v_casts';
-	uri_casts = '/php/rest-sqlite/index.php/casts';
-	uri_episodes = '/php/rest-sqlite/index.php/episodes';
+	uri_vcast = 'http://skhyun.pe.hu/php/rest-sqlite/index.php/v_casts';
+	uri_casts = 'http://skhyun.pe.hu/php/rest-sqlite/index.php/casts';
+	uri_episodes = 'http://skhyun.pe.hu/php/rest-sqlite/index.php/episodes';
 	ituns_ns = 'http://www.itunes.com/dtds/podcast-1.0.dtd';
 	mainTab = null;
 	episodeTab = null;
@@ -15,12 +15,12 @@ class QuickPlayer {
 	constructor() {
 		this.queryParams = $.getQueryParams(document.location.href);
 		this.$modalWindow = $("#popCast");
-		if(!document.location.href.includes('skhyun.pe.hu')) {
+		/* if(!document.location.href.includes('skhyun.pe.hu')) {
 			let $hostedSite = $(`<iframe id="hostFrame" name="hostFrame" src="http://skhyun.pe.hu/quickplay" style="display:none;width:0px; height:0px; border: 0px"></iframe>`);
 			$('body').append($hostedSite);
 			$hostedSite.unbind();
 			$hostedSite.on('load', e => console.log('loading hosted site', e));
-		}
+		} */
 	}
 
 	init() {
