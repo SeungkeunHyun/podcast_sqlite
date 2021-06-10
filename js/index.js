@@ -1,909 +1,908 @@
-/*jshint esversion: 6 */
-class PageIndex {
-  constructor() {
-    this.tie = new TIE();
-    this.dic = {};
-  }
-  static defaultFont() {
-    if (localStorage.getItem("defaultFont"))
-      return localStorage.getItem("defaultFont");
-    return "Nanum Brush Script";
-  }
+class QuickPlayer {
+	uri_vcast = '/php/rest-sqlite/index.php/v_casts';
+	uri_casts = '/php/rest-sqlite/index.php/casts';
+	uri_episodes = '/php/rest-sqlite/index.php/episodes';
+	ituns_ns = 'http://www.itunes.com/dtds/podcast-1.0.dtd';
+	mainTab = null;
+	episodeTab = null;
+	player = null;
+	casts = [];
+	updatedCasts = [];
+	herokuFetcher = 'https://phpfetch.herokuapp.com/fetchURL.php';
+	queryParams = null;
+	$modalWindow = null;
+	isMobile = window.orientation > -1;
+	constructor() {
+		this.queryParams = $.getQueryParams(document.location.href);
+		this.$modalWindow = $("#popCast");
+		if(!document.location.href.includes('skhyun.pe.hu')) {
+			let $hostedSite = $(`<iframe id="hostFrame" name="hostFrame" src="http://skhyun.pe.hu/quickplay" style="display:none;width:0px; height:0px; border: 0px"></iframe>`);
+			$('body').append($hostedSite);
+			$hostedSite.unbind();
+			$hostedSite.on('load', e => console.log('loading hosted site', e));
+		}
+	}
 
-  async init() {
-    var self = this;
-    await self.tie.init();
-    await self.loadTemplate(self, "templates/tpl_podcast.html");
-    self.loadData(self);
-    self.addSearchFeature(self);
-  }
+	init() {
+		fetch(this.uri_vcast)
+		.then(res => {
+			if(res.ok) {
+				return res.json();
+			}
+		})
+		.then( async(data) => {
+			this.casts = data;
+			this.dicCasts = QPHelper.generateCastInitials(this.casts);
+			await this.initializeUI();
+			$('#spinner').hide();
+		}).catch(ex => {
+			console.error(ex);
+		});
+		$("#po-bookmarks").unbind();
+		console.info('starts to add bookmarks feature');
+		$("#po-bookmarks").on('click', (e) => {
+			console.log(e);
+			this.renderBookmarks($('#popCast'));
+		});
+		this.$modalWindow.unbind();
+		this.$modalWindow.on('hidden.bs.modal', function () {
+			$(this).data('bs.modal', null);
+		});
+	}
 
-  addSearchFeature(self) {
-    var $ipt = $("#iptSearch");
-    var $btn = $("#btnSearch");
-    var searchTargets = [
-      "https://itunes.apple.com/search",
-      "http://www.podbbang.com/category/lists",
-      "https://www.podty.me/search/total"
-    ];
-    $ipt.on("keydown", function (e) {
-      if ($ipt.val().length > 0) {
-        $btn.removeClass("disabled");
-      } else {
-        $btn.addClass("disabled");
-      }
-      if (e.charCode == 13) {
-        $btn.trigger("click");
-      }
-    });
-    $ipt.on("change", function (e) {
-      if ($ipt.val().length > 0) {
-        $btn.removeClass("disabled");
-      } else {
-        $btn.addClass("disabled");
-      }
-    });
-    $btn.on("click", async function (e) {
-      var srchWord = $ipt.val();
-      var results = [];
-      for (var url of searchTargets) {
-        await self.searchResults(url, srchWord, results);
-      }
-      $("div.modal").remove();
-      var htmlModal = await self.tie.loadFile(
-        "templates/tpl_modal_podcast.html"
-      );
-      $("body").append(htmlModal.response);
-      $("div.modal h5.modal-title").text("Search results: " + srchWord);
-      $("div.modal #author").text("통합검색");
-      $("div.modal div.media img").attr(
-        "src",
-        "https://png.icons8.com/metro/1600/search.png"
-      );
-      $("div.modal div.media img").attr("width", "60px");
-      var mainData = $("#tabPodcasts")
-        .DataTable()
-        .data();
-      for (var i = 0; i < results.length; i++) {
-        results[i].registered = false;
-        for (var j = 0; j < mainData.length; j++) {
-          results[i].registered = results[i].url == mainData[j].url;
-          if (results[i].registered) {
-            break;
-          }
-        }
-      }
-      var $mdt = $("#tabModalList").DataTable({
-        data: results,
-        responsive: true,
-        paging: false,
-        columns: [{
-            data: "site",
-            title: "Site"
-          },
-          {
-            data: "name",
-            title: "Title",
-            render: function (val, typ, row, meta) {
-              return `<div class='media'>
-                            <div class='media-left'><img src='${
-                              row.image
-                            }' class='media-object rounded' style='width:60px'></div>
-                            <div class='media-body'><h5 class='media-heading' style=\"font-family: '${PageIndex.defaultFont()}', cursive;\"> ${val}</h5><p class='pSummary'>${
-                !row.registered
-                  ? "<button class='fa fa-plus-square'>Add to My</button>"
-                  : " registered in main "
-              }</p></div>
-                            </div>`;
-            }
-          }
-        ]
-      });
-      $("button.fa-plus-square").on("click", async function (e) {
-        var rowToAdd = $mdt.row($(this).closest("tr")).data();
-		rowToAdd.cast_episode = 'cast';
-		rowToAdd.provider = rowToAdd.site.toLowerCase();
-		delete rowToAdd.site;
-        LocalStorageUtil.registerLocalStorage("myCasts", "url", rowToAdd);
-        await self.loadRSS(rowToAdd, self);
-        $("#tabPodcasts")
-          .DataTable()
-          .row.add(rowToAdd)
-          .draw();
-        $(this).remove();
-      });
-      $("div.modal").modal();
-    });
-  }
+	async processQueryParams() {
+		let cast = null;
+		for(let k in this.queryParams) {
+			console.log('param', k);
+			switch(k) {
+				case 'podcastID':
+					cast = this.casts.find(c => c.podcastID == this.queryParams[k]);
+					await this.renderCast(cast, this.$modalWindow);
+					continue;
+				case 'category':
+					const $categoryFilter = $("a[data-colno=1]:contains(" + this.queryParams.category + ")");
+					if ($categoryFilter.length) {
+						$categoryFilter[0].click();
+					}
+					break;
+				case 'provider':
+					const $providerFilter = $("a[data-colno=0]:contains(" + this.queryParams.provider + ")");
+					if ($providerFilter.length) {
+						$providerFilter[0].click();
+					}
+					break;
+			}
+		}
+	}
 
-  async searchResults(url, srchWord, results) {
-    if (url.indexOf("apple") > -1) {
-      var resp = await $.ajax({
-        url: url,
-        data: {
-          term: srchWord
-        }
-      });
-      var resp = JSON.parse(resp);
-      if (resp.resultCount > 0) {
-        resp.results.forEach(function (itm) {
-          var item = {};
-          item.podcastID = itm.collectionId;
-          item.name = itm.trackName;
-          item.url = itm.feedUrl;
-          item.image = itm.artworkUrl100;
-          item.category = "My";
-          item.site = "iTunes";
-          results.push(item);
-        });
-      }
-    } else if (url.indexOf("podbbang") > 0) {
-      var resp = await $.ajax({
-        url: "https://phpfetch.herokuapp.com/php/util/fetchURL.php",
-        data: {
-          uri: url + "?keyword=" + encodeURI(srchWord)
-        }
-      });
-      var $items = $(resp).find("#podcast_list ul.clearfix");
-      $.each($items, function (i, o) {
-        var item = {};
-        var pid = o
-          .querySelector("a")
-          .getAttribute("href")
-          .substring(4);
-        item.name = o.querySelector("dt a").textContent;
-        item.url =
-          "http://www.podbbang.com/podbbangchnew/episode_list?id=" +
-          pid +
-          "&page=1&e=&sort=&page_view=&keyword=";
-        item.podcastID = pid;
-        item.image = o.querySelector("img").getAttribute("src");
-        item.category = "My";
-        item.site = "팥빵";
-        results.push(item);
-      });
-    } else {
-      var resp = await $.ajax({
-        url: "/php/util/fetchURL.php?uri=" + url + "?keyword=" + encodeURI(srchWord)
-      });
-      var $items = $(resp).find("#castResults li");
-      $.each($items, function (i, o) {
-        var item = {};
-        item.name = o.querySelector("a.name").textContent;
-        item.url =
-          "https://www.podty.me" +
-          o.querySelector("a.name").getAttribute("href");
-        item.podcastID = o
-          .querySelector("a.name")
-          .getAttribute("href")
-          .split("/")[1];
-        item.image = o.querySelector("img").getAttribute("src");
-        item.category = "My";
-        item.site = "Podty";
-        results.push(item);
-      });
-    }
-  }
+	async initializeUI() {
+		let dtOptions = QPHelper.getDTOptionsTemplate();
+		const spOptions = {
+			"data": this.casts,
+			"paging": false,
+			"scrollY": window.innerHeight - 100,
+	        "scrollCollapse": true,
+			"sDom": '<"search-box"r>lftip',
+			"columnDefs": [{ responsivePriority: 1, targets: 2 }, { responsivePriority: 2, targets: 3 }],
+			"columns": QPHelper.columnsCast,
+			"order": [3, 'desc']
+		};
+		this.mainTab = $("#tabCasts").DataTable({...dtOptions, ...spOptions});
+		/*
+		this.mainTab.rows.forEach(r => {
+			this.refreshEpisode(r.data(), 1);
+		});
+		*/
+		this.mainTab.columns.adjust().responsive.recalc();
+		this.addEvents();
+		await this.processQueryParams();
+		this.addFilters();
+		if(this.isMobile) {
+			return;
+		}
+		
+		await this.fetchEpisodes();
+		//console.log('updated casts', this.updatedCasts);
+		this.casts = this.casts.filter(i => !this.updatedCasts.includes(i.podcastID));
+		for(var c of this.updatedCasts) {
+			const updCast = await this.fetchCast(c);
+			this.casts.push(updCast);
+		}
+		console.log("updated casts", this.updatedCasts.length);
+		if(this.updatedCasts.length) {
+			this.mainTab.clear();
+			this.mainTab.rows.add(this.casts).draw();
+		}
+		$(window).bind('resize', (e) => {
+			var NewHeight = $(document).height() - 260;
+			var oSettings = this.mainTab.fnSettings();
+			oSettings.oScroll.sY = NewHeight + "px";
+			console.log(oSettings.oScroll.sY);
+			this.mainTab.fnDraw();
+		});
+		$('#tabCasts').find('tbody tr i').trigger('click');
+	}
 
-  getTitle(val, row) {
-    var itemCount = val;
-    if (row.xdoc) {
-      itemCount = `${val} <span class='badge badge-pill badge-dark'>${
-        row.xdoc.querySelectorAll("item").length
-      }</span>`;
-    }
-    return itemCount;
-  }
+	addFilters() {
+		let $ol = $('#ul_filters');
+		const filters = ["0-9,A-Z", "ㄱ-ㅎ", "category", "provider"];
+		const sortedKeys = Object.keys(this.dicCasts).sort();
+		for(let f of filters) {
+			const $li = $(`<li class='page-item btn btn-outline-warning flex-fill' style='cursor:pointer'><i class='fas fa-filter'></i> ${f}</li>`);
+			//$li.data('cast', this.dicCasts[k]);
+			switch(f) {
+				case '0-9,A-Z':
+					$li.data('indices', sortedKeys.filter(i => i.match(/[0-9|A-Z]/) != null));
+					break;
+				case 'ㄱ-ㅎ':
+					$li.data('indices', sortedKeys.filter(i => i.match(/[^(0-9|A-Z)]/) != null));
+					break;
+				case 'category':
+					$li.data('indices', [...new Set(this.casts.map(item => item.category))]);
+					break;
+				case 'provider':
+					$li.data('indices', [...new Set(this.casts.map(item => item.provider))]);
+					break;
+			}
+			$ol.append($li);
+			const $filterValues = $("#ul_filterValues");
+			$li.unbind();
+			$li.on('click', (e) => {
+				$li.siblings().removeClass('active');
+				$li.toggleClass('active');
+				$filterValues.empty();
+				if(!$li.hasClass('active')) {
+					return;
+				}
+				$filterValues.data('type', $li.text().trim());
+				$li.data('indices').forEach(i => $filterValues.append(`<li class='page-item flex-fill' style='cursor:pointer'>${i}</li>`));
+				$filterValues.find('li').on('click', (e) => {
+					const filterText = e.target.textContent;
+					switch($filterValues.data('type')) {
+						case 'category':
+							this.filterColumn(1, filterText);
+							break;
+						case 'provider':
+							this.filterColumn(0, filterText);
+							break;
+						default:
+							this.filterColumn(5, filterText);
+							break;
+					}
+				});
+			});
+		}
+	}
 
-  getCategory(val, row) {
-    if (row.site && row.site == "iTunes") {
-      return val + " <i class='fa fa-music small'></i>";
-    }
-    return `${val} ${
-      row.site && row.site == "Podty"
-        ? "<kbd class='small' title='Podty' style='font-size:8pt'>Podty</kbd>"
-        : "<img title='팟빵' src='http://img.podbbang.com/img/h2/podbbang/podbbang6.ico' width='15px'/>"
-    }`;
-  }
+	async fetchCast(castID) {
+		const reqURI = this.uri_vcast + '/podcastID/' + castID;
+		console.log('cast to refresh', reqURI);
+		const res = await fetch(reqURI);
+		const recs = await res.json();
+		return recs[0];
+	}
 
-  getTabPCColDefs(jsonPC, self) {
-    var cols = [];
-    var row = jsonPC[0];
-    for (var k in row) {
-      var col = {
-        data: k,
-        title: k
-      };
-      switch (k) {
-        case "category":
-          col.title = "Category";
-          col.render = function (val, typ, row, meta) {
-            return `<kbd style=\"font-family: '${PageIndex.defaultFont()}', cursive;\">${self.getCategory(
-              val,
-              row
-            )}</kbd>`;
-          };
-          break;
-        case "name":
-          col.render = function (val, typ, row, meta) {
-            return `<div class='media'>
-                            <div class='media-left'><img src='${
-                              row.image
-                            }' class='media-object rounded' style='width:60px'></div>
-                            <div class='media-body'><h5 class='media-heading' style=\"font-family: '${PageIndex.defaultFont()}', cursive;\"> ${self.getTitle(
-              row.name,
-              row
-            )} <p class='pSummary'></p></div>
-                            </div>`;
-          };
-          col.title = "Podcast";
-          break;
-        case "lastPub":
-          col.render = function (val, typ, row, meta) {
-            if (row.lastPub)
-              return `<small class='lastPostedAt' style=\"font-family: 'Passion One', cursive;\">${row.lastPub
-                .substring(2, 16)
-                .replace(
-                  "T",
-                  " "
-                )}</small><br><i class='fa fa-refresh' aria-hidden='true'></i>`;
-            else 
-				return `<i class='fa fa-refresh' aria-hidden='true'></i>`;
-          };
-          col.title = "Posted at";
-          break;
-        default:
-          col.visible = false;
-          break;
-      }
-      if (k == "category") {
-        cols.splice(0, 0, col);
-      } else {
-        cols.push(col);
-      }
-    }
-    return cols;
-  }
+	getFetchURL(cast) {
+		switch(cast.provider) {
+			case 'podbbang':
+			    //https://app-api6.podbbang.com/channels/15781/episodes?offset=0&limit=20&sort=desc&episode_id=0
+				return 'https://app-api6.podbbang.com/channels/' + cast.podcastID + '/episodes?offset=0&sort=desc&limit=30&episode_id=0'
+				break;
+			case 'podty':
+				return 'https://www.podty.me/cast/' + cast.podcastID;
+				break;
+			default:
+				return cast.feedURL;
+		}
+	}
 
-  async loadData(self) {
-    var jsonPC = await self.loadPodcastList();
-    if (LocalStorageUtil.getItemArrayFromLocalStorage("myCasts")) {
-      jsonPC = jsonPC.concat(
-        LocalStorageUtil.getItemArrayFromLocalStorage("myCasts")
-      );
-    }
-    jsonPC.forEach(function (itm) {
-	  itm["cast_episode"] = 'cast';
-      itm["lastPub"] = null;
-      itm["xdoc"] = null;
-    });
-    var cols = self.getTabPCColDefs(jsonPC, self);
-    var $tab = $("#tabPodcasts");
-    var $dt = $tab.DataTable({
-      data: jsonPC,
-      columns: cols,
-      paging: false,
-      bInfo: false,
-      responsive: true,
-      colReorder: true,
-      info: false
-    });
-    $("#divPodcasts div.dataTables_wrapper").addClass("small");
-    $.fn.dataTable
-      .tables({
-        visible: true,
-        api: true
-      })
-      .columns.adjust();
-    document.querySelector("table.dataTable").style = {
-      "border-collapse": "collapse",
-      width: "100%"
-    };
-    $dt.colReorder.move(1, 0);
-    $("#navbarBookmark").on("click", function (e) {
-      var bookmarks = LocalStorageUtil.getItemArrayFromLocalStorage(
-        "bookmarks"
-      );
-      if (!bookmarks) {
-        return;
-      }
-      bookmarks.sort(function (a, b) {
-        return b.recordedAt - a.recordedAt;
-      });
-      var $lstBM = $("#listBookmarks");
-      $lstBM.empty();
-      if (!bookmarks) {
-        return;
-      }
-      bookmarks.forEach(function (itm) {
-        var $item = $(
-          '<a class="dropdown-item" href="#">[' +
-          itm.title +
-          "] " +
-          itm.episode +
-          "</a>"
-        );
-        $item.data(itm);
-        $lstBM.append($item);
-      });
-      $lstBM.find("a").on("click", function () {
-        var rec = $(this).data();
-        self.playCast(rec, self, bookmarks);
-        $("button.navbar-toggler").trigger("click");
-      });
-    });
+	async fetchEpisodes() {
+		await Promise.all(
+			this.casts.map(async cast => {
+				const failCount = await this.refreshEpisode(cast, 1);
+				//console.log('episode loading result', cast, failCount);
+		}));
+	}
 
-    $("#navbarFonts").on("click", self.openFonts);
+	async refreshEpisode(cast, page) {
+		let fetchURL = this.getFetchURL(cast);
+		if(page != 1) {
+			if(fetchURL.indexOf("offset=") > -1) {
+				fetchURL.replace(/offset=\n+/, "offset=" + ((page - 1) * 30));
+			} else {
+				fetchURL += fetchURL.indexOf('?') == -1 ? '?' : '&';
+				fetchURL += 'page=' + page;
+			}
+		}
+		//console.log(c, c.feedURL);
+		const data = await $.ajax({
+			url: this.herokuFetcher,
+			data: { uri: fetchURL },
+			dataType: cast.provider == 'itunes' ? 'xml' : 'json'
+		});
+		let episodes = await this.parseEpisodes(cast, data);
+		let done = false;
+		let failCount = 0;
+		for (let itm of episodes) {
+			if(failCount > 1) {
+				break;
+			}
+			itm.cast_episode = cast.podcastID;
+			try {
+				let res = await fetch(this.uri_episodes, {
+					method: "POST",
+					mode: 'cors', // no-cors, *cors, same-origin
+					cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+					credentials: 'same-origin', // include, *same-origin, omit
+					headers: {
+						'Content-Type': 'application/json'
+						// 'Content-Type': 'application/x-www-form-urlencoded',
+					},
+					redirect: 'follow', // manual, *follow, error
+					referrer: 'no-referrer', // no-referrer, *client
+					body: JSON.stringify(itm)
+				});
+				res = await res.json();
+				if (res.hasOwnProperty('error')) {
+					failCount++;
+					//console.error('error in posting', res, itm);
+					if (episodes.length > 15 || failCount > 1) {
+						break;
+					}
+				} else if (this.updatedCasts.indexOf(cast.podcastID) == -1) {
+					this.updatedCasts.push(cast.podcastID);
+					//console.log('posting result', res, itm);
+				}
+			} catch (res) {
+				failCount++;
+				console.error(itm, res);
+				break;
+			}
+		}
+		if(episodes.length > 0 && failCount == 0 && cast.provider !== 'itunes') {
+			console.log(failCount, cast);
+			this.refreshEpisode(cast, page+1);
+		}
+		return failCount;
+	}
 
-    $("footer").remove();
-    $("body").append(
-      '<footer class="container-fluid page-footer font-small stylish-color-dark pt-4 mt-4" style="width:100%;position:fixed;bottom:0"><div class="progress">' +
-      '<div style="height:60px;vertical-align:middle" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>' +
-      "</div></footer>"
-    );
-	var $dt = $tab.DataTable();
-	$tab.on(
-      "click",
-      "i.fa-refresh", {
-        self: self,
-        dt: $dt,
-        $dt
-      },
-      self.refreshRecord
-    );
-    self.refreshPostData($dt, self);
-    self.addDTEvents($tab, self);
-  }
+	calculateDate(pdat) {
+		if(pdat.match(/\d{4}-\d{2}-\d{2}/) != null) {
+			return pdat;
+		}
+		let m = pdat.match(/\d+/);
+		let cdat = new Date();
+		if(pdat.indexOf('일') > -1) {
+			return new Date(cdat.getTime() - (parseInt(m[0]) * 1000 * 60 * 60 * 24)).toISOString();
+		}
+		if(pdat.indexOf('시간') > -1) {
+			return new Date(cdat.getTime() - (parseInt(m[0]) * 1000 * 60 * 60)).toISOString();
+		}
+		if(pdat.indexOf('분') > -1) {
+			return new Date(cdat.getTime() - (parseInt(m[0]) * 1000 * 60)).toISOString();
+		}
+		return pdat;
+	}
 
-  openFonts(e) {
-    var fonts = $("head link[href^='https://fonts.googleapis.com/css']")
-      .attr("href")
-      .split("=")[1]
-      .split("|");
-    var $lstFont = $("#listFonts");
-    $lstFont.empty();
-    if (!fonts) {
-      return;
-    }
-    fonts.forEach(function (itm) {
-      itm = itm.replace(/[+]/g, " ");
-      var $item = $(
-        '<a class="dropdown-item" style="font-family: ' +
-        itm +
-        ', cursive;" href="#">' +
-        itm +
-        "</a>"
-      );
-      $item.data(itm);
-      $lstFont.append($item);
-      $lstFont.find("a").on("click", function () {
-        $("button.navbar-toggler").trigger("click");
-        localStorage.setItem("defaultFont", this.textContent);
-        $("h5[style^=font-family]").attr(
-          "style",
-          "font-family:'" + this.textContent + "', cursive;"
-        );
-        $("kbd[style^=font-family]").attr(
-          "style",
-          "font-family:'" + this.textContent + "', cursive;"
-        );
-      });
-    });
-  }
+	async parseEpisodes(cast, src) {
+	    console.log('fetched data', cast, src);
+		let $el = null;
+		const episodes = [];
+		let recCast = JSON.parse(JSON.stringify(cast));
+		recCast.cast_episode = null;
+		delete recCast.lastPubAt;
+		delete recCast.episodes;
+		let ep = null;
+		switch(cast.provider) {
+			case 'podbbang':
+				/*
+				const data = await $.ajax({
+					url: this.herokuFetcher,
+					data: { uri: 'https://podbbang.com/ch/' + cast.podcastID },
+					dataType: cast.provider == 'itunes' ? 'xml' : 'html'
+				});
+				const $dat = $(data);
+				recCast.name = $dat.find('h3.title')[0].textContent.trim();
+				recCast.summary = $dat.find('div.description')[0].textContent;
+				recCast.imageURL = $dat.find('div.podcast-details__podcast img').attr('src').replace(/\?.+$/, '');
+				recCast.author = recCast.name;
+				
+				const scriptStart = `[{"uid":`;
+				const scriptEnd = `, 'N');`;
+				const strSrc = src + "";
+				let scriptBody = src.substring(src.indexOf(scriptStart), src.indexOf(scriptEnd, src.indexOf(scriptStart)));
+				//console.log('scriptBody', scriptBody);
+				*/
+				//console.log('fetched podbbang episodes', src);
+				try {
+					//console.log("podbbang episodes", pb_episodes);					
+					//pb_episodes = pb_episodes.map(i => JSON.parse(decodeURIComponent(JSON.stringify(i))));
+					src.data.forEach(pbep=> {
+					    //console.log('podbbang ep', pbep);
+						//console.log(key, episode[key]);
+						if (!pbep.isFree) {
+							return;
+						}
+						ep = {};
+						ep.mediaURL = pbep.media.url;
+						ep.title = pbep.title;
+						ep.subtitle = pbep.description;
+						ep.duration = pbep.media.duration;
+						ep.pubDate = pbep.publishedAt;
+						episodes.push(ep);
+					});
+					console.log("podbbang episodes", cast, episodes);
+				} catch(ex) {
+					console.log(ex);
+				}
+				break;
+			case 'podty':
+				$el = $(src);
+				recCast.name = $el.filter('title').text().trim();
+				recCast.summary = $el.find('div.intro pre')[0].textContent.trim();
+				recCast.imageURL = $el.find('div.thumbnail img').attr('src').trim();
+				recCast.author = $el.find('ul.subInfo li')[0].querySelector('strong').textContent.trim();
+				console.log('podty episodes from api');
+				try {
+					const apiData = await $.ajax({
+						method: 'GET', 
+						url: this.herokuFetcher,
+						data: {'uri': `https://www.podty.me/cast/${cast.podcastID}/episode/list?orderType=desc`},
+						dataType: 'json'
+					});
+					let $el_items = $(apiData.list_html);
+					console.log('podty result', apiData, $el_items);		
+					/* recCast.feedURL = $el.find('button.rss').attr('data-clipboard-text').trim(); */
+					
+					$.each($el_items, (i, o) => {
+						if(o.tagName !== 'LI') {
+							return;
+						}
+						console.log('podty ep', i, o);
+						ep = {};
+						ep.mediaURL = o.getAttribute('data-play-uri');
+						ep.title = o.getAttribute('data-episode-name');
+						ep.pubDate = o.querySelector('div.episodeInfo time.date') == null ? null : o.querySelector('div.episodeInfo time.date').textContent.replace(/\./g, '-').trim();
+						ep.pubDate = this.calculateDate(ep.pubDate);
+						ep.duration = o.querySelector('div.episodeInfo div.playTime') == null ? null : o.querySelector('div.episodeInfo div.playTime').textContent.trim();
+						episodes.push(ep);
+					}); 
+				} catch(ex) {
+					console.error('podty episodes loading failed', ex);
+				}
+				console.log('podty episodes', episodes);
+				break;
+			default:
+				recCast.name = src.querySelector('rss channel title').textContent.trim();
+				recCast.summary = src.querySelector('rss channel description').textContent.trim();
+				recCast.author = src.querySelector('rss channel author').textContent.trim();
+				recCast.imageURL = src.querySelector('rss channel image[href]').getAttribute('href');
+				src.querySelectorAll('item').forEach(itm => {
+					ep = {};
+					ep.title = itm.querySelector("title").textContent.trim();
+					ep.pubDate = new Date(itm.querySelector("pubDate").textContent).toISOString();
+					ep.mediaURL = itm.querySelector("enclosure").getAttribute("url");
+					if (ep.mediaURL === 'http://kbspodcastad.kbs.co.kr/cgi-bin/podcast.fcgi/kbsaod/') {
+						return;
+					}
+					if (itm.querySelector("summary"))
+						ep.summary = itm.querySelector("summary").textContent.trim();
+					if (itm.querySelector("duration")) {
+						ep.duration = itm.querySelector("duration").textContent.trim();
+					} else {
+						ep.duration = null;
+					}
+					episodes.push(ep);
+				});
+				break;
+		}
+		for(let k in recCast) {
+			if(cast.hasOwnProperty(k) && cast[k] !== recCast[k]) {
+				console.log(k, "prev", cast[k], "current", recCast[k])
+				const reqURL = this.uri_casts + '/' + recCast.podcastID;
+				fetch(reqURL, {
+					method: "PUT",
+					mode: 'cors', // no-cors, *cors, same-origin
+					cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+					credentials: 'same-origin', // include, *same-origin, omit
+					headers: {
+						'Content-Type': 'application/json'
+						//'Content-Type': 'application/x-www-form-urlencoded'
+					},
+					redirect: 'follow', // manual, *follow, error
+					referrer: 'no-referrer', // no-referrer, *client
+					body: JSON.stringify(recCast)
+				}).then(res => {
+					 if(res.ok) 
+						return res.json();
+				})
+				.then(resp => {
+					if(!this.updatedCasts.includes(recCast.podcastID)) {
+						this.updatedCasts.push(recCast.podcastID);
+					}
+					console.log(reqURL, recCast, resp)
+				});
+				break;
+			}
+		}
+		return episodes.sort((a,b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
+	}
 
-  async loadRSS(dat, self) {
-    var key = CryptoJS.SHA256(dat.url).toString();
-    dat["key"] = key;
-    //dic[key] = "";
-    if (
-      dat.url.indexOf("podbbang") > -1 ||
-      dat.url.indexOf("ssenhosting") > -1
-    ) {
-      var podbbangURL =
-        "http://www.podbbang.com/podbbangchnew/episode_list?id=" +
-        dat.podcastID +
-        "&page=";
-      dat.site = "Podbbang";
-      var episode = {};
-      for (var i = 1; i < 7; i++) {
-        var doc = await $.ajax({
-          url: "https://phpfetch.herokuapp.com/php/util/fetchURL.php",
-          data: {
-            uri: podbbangURL + i
-          }
-        });
-        if (doc.indexOf("var episode_uids") == -1) {
-          var episode_uids = [];
-        }
-        eval(
-          doc.substring(
-            doc.indexOf("var ischsell	= 'N';"),
-            doc.indexOf("if(episode_uids")
-          )
-        );
-      }
-      dat.episodes = episode;
-      var xdoc = DakchoV4_Utils.convertPodBbangHTMLToRSS(dat);
-    } else if (dat.url.indexOf("www.podty.me") > -1) {
-      dat.site = "Podty";
-      var doc = await self.tie.loadFile("/php/util/fetchURL.php?uri=" + dat.url);
-      var xdoc = DakchoV4_Utils.convertPodtyHTMLToRSS(doc.response);
-    } else {
-      dat.site = "iTunes";
-      var doc = await self.tie.loadExternalFile(dat.url);
-      var xdoc = $.parseXML(doc.response);
-    }
-    var srcImg = xdoc.querySelector("image").getAttribute("href");
-    if (!srcImg) {
-      srcImg = xdoc.querySelector("image url").textContent;
-    }
-    dat["image"] = srcImg;
-    dat["xdoc"] = xdoc;
-    var dt = self.getLatestPubDate(xdoc);
-    dt.setHours(dt.getHours() + 9);
-    dat["lastPub"] = dt.toISOString();
-    //$row.invalidate();
-  }
+	addContextMenu() {
+		const $mtab = this.mainTab;
+		const currentPage = document.location.href.replace(/\?.+$/, '');
+		$.contextMenu({
+			selector: '#tabCasts tbody tr',
+			name: 'Copy URL',
+			icon: 'copy',
+			callback: function (key, opt) {
+				const rdat = $mtab.row(this).data();
+				let queryString = '?'
+				switch(key) {
+					case 'copy_cast':
+						queryString += 'podcastID=' + rdat.podcastID;
+						break;
+					case 'copy_category':
+						queryString += 'category=' + rdat.category;
+						break;
+					case 'copy_provider':
+						queryString += 'provider=' + rdat.provider;
+						break;
+				}
+				$.copyToClipboard(currentPage + queryString);
+			},
+			items: {
+				copy_url: {
+					name: "Copy URL",
+					icon: 'copy',
+					items: {
+						copy_cast: {
+							name: "Copy cast URL"
+						},
+						copy_category: {
+							name: "Copy category URL"
+						},
+						copy_provider: {
+							name: "Copy provider URL"
+						}
+					}
+				}
+			}
+		});
+	}
 
-  setProgressPercentage(rcnt, rowsToRefresh, self) {
-    var $pbar = $("div.progress-bar");
-    var pct = parseInt(((rcnt - rowsToRefresh) / rcnt) * 100);
-    $pbar.attr("style", `width: ${pct}%`);
-    $pbar.attr("arial-valuenow", pct);
-    $pbar.text(`Loading: ${pct}%`);
-  }
+	addEpisodeContextMenu(castId) {
+		const $mtab = $('#tabEpisodes').DataTable();
+		const currentPage = document.location.href.replace(/\?.+$/, '');
+		$.contextMenu({
+			selector: '#tabEpisodes tbody tr',
+			name: 'Copy URL',
+			icon: 'copy',
+			callback: function (key, opt) {
+				const rdat = $mtab.row(this).data();
+				console.log(this, rdat);
+				let queryString = '?podcastID=' + rdat.cast_episode + '&mediaURL=' + rdat.mediaURL.trim();
+				console.log(currentPage + queryString);
+				$.copyToClipboard(currentPage + queryString);
+			},
+			items: {
+				'copy': {name: 'copy URL', icon: 'copy'}
+			}
+		});
+	}
 
-  async refreshPostData($dt, self) {
-    var serializer = new XMLSerializer();
-    var dic = {};
-    var rowsToRefresh = $dt.data().count();
-    var rcnt = $dt.rows().count();
-    $dt.rows().every(async function (rowIdx, tableLoop, rowLoop) {
-      try {
-        var $row = $dt.row(rowIdx);
-        await self.loadRSS($row.data(), self);
-        $row.invalidate();
-      } catch (ex) {
-        console.error(ex);
-      } finally {
-        self.setProgressPercentage(rcnt, rowsToRefresh--, self);
-      }
-      if (rowsToRefresh == 0) {
-        self.postTableRefresh($dt, self);
-        self.setDefaultResume(self);
-      }
-    });
-  }
+	addEvents() {
+		this.mainTab.on('click', 'tbody tr td h5.media-heading,tbody tr td small', async (e) => {
+			const row = e.currentTarget.closest('tr');
+			$('#spinner_modal').hide();
+			await this.renderCast(this.mainTab.row(row).data(), this.$modalWindow);
+		});
+		this.mainTab.on('click', 'tbody tr td span.lead', async (e) => {
+			const row = e.currentTarget.closest('tr');
+			const $icon = $(e.currentTarget.querySelector('svg'));
+			$icon.addClass('fa-spin');
+			const cdat = this.mainTab.row(row).data();
+			await this.refreshEpisode(cdat,1);
+			const refdat = await this.fetchCast(cdat.podcastID);
+			console.log('refreshed cast', refdat);
+			this.mainTab.row(row).data(refdat);
+			$icon.removeClass('fa-spin');
+		});
+		this.mainTab.on('click', 'tbody tr td div.media-footer a', async (e) => {
+			const colno = parseInt(e.currentTarget.getAttribute('data-colno'));
+			this.filterColumn(colno, e.currentTarget.textContent.trim());
+		});
+		this.addContextMenu();
+		this.addSearch();
+		this.player = document.getElementById('player');
+		this.addPlayerControls();
+	}
 
-  postTableRefresh($dt, self) {
-    $dt.order([5, "desc"]).draw();
-    if (window.location.hash.length > 1) {
-      var pcid = window.location.hash.substring(1);
-      var rowsDat = $dt.data();
-      for (var i = 0; i < rowsDat.length; i++) {
-        if (rowsDat[i].podcastID == pcid) {
-          var evt = new Event("pcid");
-          evt.data = {};
-          evt.data.self = self;
-          evt.data.dat = rowsDat[i];
-          self.showList(evt);
-          break;
-        }
-      }
-    }
-  }
+	filterColumn(colno, srchWord) {
+		const $filterLabel = $('div.dataTables_filter label');
+		if ($filterLabel.find(`a:contains('${srchWord}')`).length) {
+			return;
+		}
+		$filterLabel.find(`a[data-colno='${colno}']`).remove();
+		this.mainTab.column(colno).search('').draw();
+		let $srchTag = $(`<a data-colno='${colno}' class='m-1 badge text-light font-weight-bold bg-${QPHelper.col_classes[colno]}'>${srchWord}<i class='fas fa-times m-1'></i></a>`)
+		$("div.dataTables_filter label").prepend($srchTag);
+		$filterLabel.find(`a:contains('${srchWord}')`).on('click', async (e) => {
+			colno = parseInt(e.currentTarget.getAttribute('data-colno'));
+			this.mainTab.column(colno).search('').draw();
+			e.currentTarget.remove();
+			console.log(e);
+		});
+		console.log($srchTag);
+		this.mainTab.column(colno).search(srchWord).draw();
+	}
 
-  setDefaultResume(self) {
-    if ($("#player").length == 0) {
-      var bookmarks = LocalStorageUtil.getItemArrayFromLocalStorage(
-        "bookmarks"
-      );
-      $("footer").remove();
-      if (bookmarks) {
-        self.playCast(bookmarks[0], self, bookmarks, true);
-      }
-    }
-  }
+	addSearch() {
+		const $srchForm = $('#searchForm');
+		$srchForm.on('click', 'button', (e) => {
+			e.preventDefault();
+			if($srchForm.find('input').val().trim().length === 0) {
+				return;
+			}
+			this.renderSearchResult($srchForm.find('input').val().trim());
+		});
+	}
 
-  getLatestPubDate(xdoc) {
-    var items = xdoc.getElementsByTagName("item");
-    if (items[0].querySelector("pubDate")) {
-      var dt1 = new Date(items[0].querySelector("pubDate").textContent);
-      var dt2 = new Date(
-        items[items.length - 1].querySelector("pubDate").textContent
-      );
-    } else {
-      var dt1 = new Date(items[0].querySelector("pubdate").textContent);
-      var dt2 = new Date(
-        items[items.length - 1].querySelector("pubdate").textContent
-      );
-    }
-    return dt1 > dt2 ? dt1 : dt2;
-  }
+	async renderSearchResult(kwd) {
+		console.log('search keyword', kwd);
+		let searchResults = [];
+		let res = null;
+		if (kwd.match(/\s/)) {
+			let skwd = kwd.trim().replace(/\s/g, '%25');
+			res = await fetch(this.uri_episodes + '/title/%25' + skwd + '%25');
+			searchResults = await res.json();
+			skwd = kwd.split(' ').reverse().join('%25');
+			res = await fetch(this.uri_episodes + '/title/%25' + skwd + '%25');
+			searchResults.concat(await res.json());
 
-  addDTEvents($tab, self) {
-    var $dt = $tab.DataTable();
-    var dat = $dt.row(this).data();
-	console.log(dat);
-    $tab.on(
-      "click",
-      "h5", {
-        self: self,
-        dt: $dt
-      },
-      self.showList
-    );
-  }
+		} else {
+			res = await fetch(this.uri_episodes + '/title/%25' + kwd + '%25');
+			const searchResults = await res.json();
+		}
+		
+		for(let e of searchResults) {
+			let c = this.casts.find(i => i.podcastID === e.cast_episode);
+			e.cast = c.name;
+			e.image = c.imageURL;
+		}
+		console.log(searchResults);
+		const modal_html = await QPHelper.loadHTML('components/modal_bookmarks.html');
+		this.$modalWindow.html(modal_html);
+		this.$modalWindow.find('h5').html(`<h5><i class='fas fa-search'></i> Search results(keyword: ${kwd}, searched: ${searchResults.length})</h5>`)
+		//console.log(eps);
+		let dtOptions = QPHelper.getDTOptionsTemplate();
+		const spOptions = {
+			"data": searchResults,
+			"sDom": '<"search-box"r>lftip',
+			"columns": QPHelper.columnsSearch,
+			"order": [2, 'desc']
+		}
+		let $dtab = $('#tabEpisodes').DataTable({ ...dtOptions, ...spOptions });
+		$dtab.columns.adjust().responsive.recalc();
+		$dtab.on('click', 'tbody tr span[title=resume],tbody h5', (e) => {
+			const pdat = $dtab.row(e.currentTarget.closest('tr')).data();
+			const cast = this.casts.find(c => c.name == pdat.cast);
+			this.playEpisode(cast, pdat);
+			console.log(pdat);
+		});
+		$dtab.on('click', 'tbody tr i[title=delete]', (e) => {
+			const row = e.currentTarget.closest('tr');
+			QPHelper.deleteBookmark(QPHelper.storeKey, $dtab.row(row).data().mediaURL);
+			$dtab.row(row).remove().draw();
+		});
+		$('#spinner_modal').hide();
+		this.$modalWindow.modal('show');
+	}
 
-  async refreshRecord(evt) {
-    var $tr = $(this).closest("tr");
-    var $dt = evt.data.dt;
-    var self = evt.data.self;
-    var $icon = $(this);
-    $icon.addClass("fa-spin");
-    await self.loadRSS($dt.row($tr).data(), self);
-    $dt.row($tr).invalidate();
-    $icon.removeClass("fa-spin");
-  }
+	addPlayerControls() {
+		$('div.btn-group button').on('click', e => {
+			const btn = e.currentTarget.querySelector('svg');
+			//console.log(btn);
+			if (btn.classList.contains('fa-play')) {
+				const prom = this.player.play();
+				if(prom) { 
+					prom.then(e =>  {
+						console.log(e);
+					}).catch(e => {
+						const ctime = this.player.currentTime;
+						this.player.load();
+						this.player.play();
+						this.player.currentTime = ctime;
+					});
+				}
+				return;
+			}
+			if (btn.classList.contains('fa-forward')) {
+				this.player.currentTime += 30;
+				return;
+			}
+			if (btn.classList.contains('fa-backward')) {
+				this.player.currentTime -= 30;
+				return;
+			}
+			if (btn.classList.contains('fa-pause')) {
+				this.player.pause();
+				return;
+			}
+			if (btn.classList.contains('fa-download')) {
+				const ep = $(this.player).data('episode');
+				const cast = $(this.player).data('cast');
+				QuickPlayer.download(cast, ep);
+				return;
+			}
+		});
+		const $playerToggler = $("#playerToggler");
+		this.player.onplay = e => {
+			$playerToggler.removeClass('d-none');
+			QuickPlayer.iconToggle(true);
+			$playerToggler.addClass('blink_me');
+		};
+		this.player.onabort = e => {
+			$playerToggler.removeClass('blink_me');
+			QuickPlayer.iconToggle(false);
+		};
+		this.player.onpause = e => {
+			$playerToggler.removeClass('blink_me');
+			QuickPlayer.iconToggle(false);
+			this.recordCurrent(true);
+		};
+		this.player.onended = e => {
+			$playerToggler.removeClass('blink_me');
+			QuickPlayer.iconToggle(false);
+			this.recordCurrent(false);
+		}
 
-  mapRSSItemsToJSON(items, self) {
-    var jsonItems = [];
-    items.forEach(function (itm) {
-      var jsonItem = {};
-      jsonItem.episode = itm.querySelector("title").textContent;
-      jsonItem.pubdate = itm.querySelector("pubdate") ?
-        itm.querySelector("pubdate").textContent :
-        itm.querySelector("pubDate").textContent;
-      jsonItem.source = itm.querySelector("enclosure").getAttribute("url");
-      if (itm.querySelector("summary"))
-        jsonItem.summary = itm.querySelector("summary").textContent;
-      if (itm.querySelector("duration")) {
-        jsonItem.duration = itm.querySelector("duration").textContent;
-      } else {
-        jsonItem.duration = null;
-      }
-      jsonItems.push(jsonItem);
-    });
-    return jsonItems;
-  }
+		this.player.ontimeupdate = e => {
+			if (isNaN(this.player.duration)) {
+				return;
+			}
+			if (parseInt(this.player.currentTime) % 10 == 0) {
+				this.recordCurrent(true);
+			}
+			const pct = this.setProgressPercentage();
+			this.detectProgressMove();
+		};
+	}
 
-  setDataTableRenderOption(self) {
-    $.fn.dataTable
-      .tables({
-        visible: true,
-        api: true
-      })
-      .columns.adjust();
-    document.querySelector("table.dataTable").style = {
-      "border-collapse": "collapse",
-      width: "100%"
-    };
-    $("div.modal div.dataTables_wrapper").addClass("small");
-  }
+	static iconToggle(isPlaying) {
+		const $buttons = $("div.btn-group i");
+		let $btn = isPlaying ? $buttons.find("svg.fa-play") : $buttons.find("svg.fa-pause");
+		//console.log(isPlaying, $btn);
+		if ($btn.length) {
+			$btn.removeClass(isPlaying ? "fa-play" : "fa-pause");
+			$btn.addClass(isPlaying ? "fa-pause" :"fa-play");
+		}
+	}
 
-  async showList(evt) {
-    var self = evt.data.self;
-    if (evt.type == "pcid") {
-      var dat = evt.data.dat;
-    } else {
-      var dat = evt.data.dt.row($(evt.currentTarget).closest("tr")).data();
-    }
-    $("div.modal").remove();
-    var htmlModal = await self.tie.loadFile("templates/tpl_modal_podcast.html");
-    $("body").append(htmlModal.response);
-    $("div.modal h5.modal-title").text(dat.name);
-    $("div.modal div.media img").attr("src", dat.image);
-    $("div.modal #author").text(dat.xdoc.querySelector("author").textContent);
-    $("div.modal #pcSummary").text(
-      dat.xdoc.querySelector("summary").textContent
-    );
-    var items = dat.xdoc.querySelectorAll("item");
-    var jsonItems = self.mapRSSItemsToJSON(items, self);
-    jsonItems.sort(function (a, b) {
-      return new Date(b.pubdate) - new Date(a.pubdate);
-    });
-    var $modalTab = $("div.modal table#tabModalList");
-    var $mdt = $modalTab.DataTable({
-      destroy: true,
-      data: jsonItems,
-      columns: self.getPCListColDefs(),
-      //fixedHeader: true,
-      paging: false,
-      responsive: true,
-      info: false,
-      bInfo: false,
-      order: [
-        [1, "desc"]
-      ]
-    });
-    self.setDataTableRenderOption(self);
-    $modalTab.on("click", "td", function (evt) {
-      var toPlay = $(this).has("i.fa-play-circle").length;
-      var dat = $mdt.row(this).data();
-      var rec = {};
-      rec.title = $("h5.modal-title").text();
-      rec.image = $("div.modal-header img").attr("src");
-      rec.author = $("#author").text();
-      rec.episode = dat.episode;
-      rec.currentTime = 0;
-      rec.source = dat.source;
-      rec.summary = dat.summary;
-      if (toPlay) {
-        self.playCast(rec, self, jsonItems);
-        $("div.modal").modal("toggle");
-      } else {
-        self.downloadFile(rec, self);
-      }
-    });
-    $("div.modal").modal("toggle");
-    $mdt.columns.adjust();
-  }
+	static download(cast, ep) {
+		const rec = {
+			lnk: ep.mediaURL,
+			artist: cast.author,
+			ttl: cast.name,
+			title: ep.title,
+			img: cast.imageURL
+		}
+		$.download('/php/util/encodeID3Download.php', rec, 'dlFrame');
+		JSAlert.alert(`${rec.ttl} - ${rec.title} to be downloaded soon. Wait a while to be processed`).dismissIn(1000 * 2);
+	}
 
-  downloadFile(rec, self) {
-    var dat = {
-      lnk: encodeURI(rec.source),
-      img: encodeURI(rec.image),
-      artist: rec.author,
-      ttl: rec.title,
-      title: rec.episode,
-      summary: rec.summary
-    };
-    $.download("/php/util/encodeID3Download.php", dat, "dlFrame");
-    /*
-        if (typeof (io) === "function" && dat.ttl.indexOf("뉴스관장") > -1) {
-            var socket = io('http://localhost:3000');
-            socket.emit('id3write', dat);
-            console.log(socket, dat);
-            socket.on("received", function (dat) {
-                console.log(dat);
-                socket.close();
-            });
+	recordCurrent(toRecord) {
+		let qpb = QuickPlayer.getBookmarks();
+		if(!qpb) {
+			qpb = {};
+		}
+		const mediaSrc = $('#player').attr('src');
+		if(toRecord) {
+			const rec = {
+				title: $('#ep-title').attr('title'),
+				image: $('#ep-image').attr('src'),
+				cast: $('#ep-image').attr('title'),
+				mediaURL: mediaSrc,
+				currentTime: document.querySelector('#player').currentTime,
+				recordedAt: new Date().getTime()
+			};
+			qpb[rec.mediaURL] = rec;
+		} else {
+			if (qpb.hasOwnProperty(mediaSrc)) {
+				delete qpb[mediaSrc];
+			}
+		}
+		localStorage.setItem(QPHelper.storeKey, JSON.stringify(qpb));
+	}
 
-        } else {
-            $.download("/php/util/getid3_download.php", dat, "dlFrame");
-        }
-        */
-  }
+	detectProgressMove() {
+		const pbar = document.querySelector("#playerProgress");
+		$('div.progress').on('click', e => {
+			const ctime = this.player.duration * (e.offsetX / e.currentTarget.offsetWidth);
+			this.player.currentTime = ctime;
+		});
+	}
 
-  setPlayerFooter(rec, isDefault, self) {
-    var player = document.querySelector("#mplayer");
-    if (player && player.duration > 0 && !player.paused) {
-      player.pause();
-    }
-    var $div = $("footer");
-    var mtype =
-      rec.source.toLowerCase().indexOf(".mp3") > -1 ? "audio" : "video";
-    $div.remove();
-    $div = $(`<footer class='container-fluid page-footer font-small stylish-color-dark pt-4 mt-4' style='width:100%;position:fixed;bottom:0'>
-            <div class='row'><div class='text-md-left media col-md-6'><div class='media-left'><img class='rounded' src='${
-              rec.image
-            }' width='60px'></div>
-            <div class='media-body'><strong>${
-              rec.title
-            }</strong><br/><small class='col-md-6'>${
-      rec.episode
-    }</small></div></div>
-            <div class='col-md-6 text-center' style='padding:0px'>
-            <div>
-            <${mtype} id='mplayer' style='width:100%' controls><source src='${
-      rec.source
-    }'></${mtype}>
-            </div>
-            <div class='btn-group btn-group-justified align-center' id='divBtnControllers'>
-            <button type='button' id='btnPrev' class='btn btn-sm btn-primary'><i class='fa fa-fast-backward'></i></button>
-            <button type='button' id='btn30b' class='btn btn-sm btn-primary'><i class='fa fa-backward'></i></button>
-            <button type='button' id='btnPP' class='btn btn-sm btn-primary'><i class='fa fa-pause'></i></button>
-            <button type='button' id='btn30f' class='btn btn-sm btn-primary'><i class='fa fa-forward'></i></button>
-            <button type='button' id='btnNext' class='btn btn-sm btn-primary'><i class='fa fa-fast-forward'></i></button>
-            <select id='selPlist' data-live-search='true' class='selectpicker show-tick input-sm' style='background-color:gray'>
-            </select>
-            </div></div></footer>`);
-    $("body").append($div);
-    player = document.querySelector("#mplayer");
-    $(player).data(rec);
-    player.load();
-    $div.find("#divBtnControllers").on("click", "button", self.setControllers);
-    $div.find("button.dropdown-toggle").addClass("btn-sm");
-    if (rec.currentTime) {
-      if (!!navigator.platform.match(/iPhone|iPod|iPad/)) {
-        player.currentSrc += "#t=" + rec.currentTime;
-      } else {
-        player.currentTime = rec.currentTime;
-      }
-    }
-    if (!isDefault) {
-      player.play();
-    }
-    self.addEvents(player, self);
-  }
+	setProgressPercentage() {
+		const $pbar = $("div.progress-bar");
+		const pct = parseInt((this.player.currentTime / this.player.duration) * 100);
+		$pbar.attr("style", `width: ${pct}%`);
+		$pbar.attr("arial-valuenow", pct);
+		$("#progressStat").text(`${QPHelper.makeTimeInfo(this.player.currentTime)} / ${QPHelper.makeTimeInfo(this.player.duration)} (${pct}%)`);
+		return pct;
+	}
 
-  setPlayList(plist, rec, self) {
-    var $divPlist = $("#selPlist");
-    plist.forEach(function (itm) {
-      var $item = $(
-        `<option title='${itm.episode}'>${
-          itm.episode.length > 20
-            ? itm.episode.substring(0, 17) + "..."
-            : itm.episode
-        }</option>`
-      );
-      if (itm.source == rec.source) {
-        $item.attr("selected", true);
-      }
-      $item.data(itm);
-      $divPlist.append($item);
-    });
-    $divPlist.on("click", "option", function () {
-      self.playCast($(this).data(), self, plist);
-    });
-    $divPlist.on("change", function (e) {
-      var rec = $(this[this.selectedIndex]).data();
-      self.playCast(rec, self, plist);
-    });
-    var $bsSel = $divPlist.selectpicker({
-      style: "btn-primary",
-      size: 4
-    });
-  }
+	async renderCast(cast, $md) {
+		$md.empty();
+		const modal_html = await QPHelper.loadHTML('components/modal_episodes.html');
+		$md.html(modal_html);
+		const header = `<div class="media text-right">
+                            <!--// <div class="media-left"><img src="${cast.imageURL}" class="media-object rounded" width="60px"></div> //-->
+							<div class="media-body"><h5 class="media-heading mt-0 font-weight-bold">${cast.name} <span class="badge badge-info">${cast.episodes}</span></h5>
+							<small class='font-weight-bold'>last update: ${moment(cast.lastPubAt).add(9, 'hours').format('YY/MM/DD HH:mm')}</small>
+							</div>
+                            </div>`
+		$md.find('h5.modal-title').html(header);
+		const $divContent = $md.find('div.modal-content');		
+		$md.modal('show');
+		$divContent.css('background-image', 'linear-gradient(rgba(255,255,255,0.4), rgba(255,255,255,0.4)), url(' + cast.imageURL + ')');
+		$divContent.css('background-repeat', 'no-repeat');
+		$divContent.css('background-size', '100% 100%');
+		$divContent.css('background-position', 'center center');
+		$divContent.css('border-radius', '10px');
+		$divContent.css('max-height', 'calc(80vh - 140px)');
+		$divContent.css('overflow-y', 'scroll');
+	
+		if (this.episodeTab !== null) {
+			this.episodeTab.clear();
+		}
+		const res = await fetch(this.uri_episodes + '/cast_episode/' + cast.podcastID)
+		const eps = await res.json();
+		let dtOptions = QPHelper.getDTOptionsTemplate();
+		const spOptions = {
+			"data": eps,
+			"sDom": '<"search-box"r>lftip',
+			"oLanguage": { sProcessing: "<div id='loader'></div>" },
+			"columns": QPHelper.columnsEpisode,
+			"order": [1, 'desc']
+		}
+		this.episodeTab = $('#tabEpisodes').DataTable({...dtOptions, ...spOptions});
+		//const $dtab = this.episodeTab;
+		this.episodeTab.on('click', 'tbody tr td span', (e) => {
+			const pdat = this.episodeTab.row(e.currentTarget.closest('tr')).data();
+			this.playEpisode(cast, pdat);
+			console.log(pdat);
+		});
+		this.episodeTab.on('click', 'tbody tr td button', (e) => {
+			const pdat = this.episodeTab.row(e.currentTarget.closest('tr')).data();
+			QuickPlayer.download(cast, pdat);
+		});
+		if(this.queryParams.hasOwnProperty('mediaURL')) {
+			console.log(this.episodeTab.data());
+			const ep = Array.from(this.episodeTab.data()).find(e => e.mediaURL === this.queryParams['mediaURL']);
+			console.log(ep);
+			this.playEpisode(cast, ep);
+		}
+		this.episodeTab.columns.adjust().responsive.recalc();
+		$('#spinner_modal').hide();
+		this.selectPlayingRow(this.episodeTab, cast);
+		this.addEpisodeContextMenu(cast.castID);
+	}
 
-  playCast(rec, self, plist, isDefault) {
-    if (plist && plist.length > 0) {
-      if (!plist[0].hasOwnProperty("image")) {
-        plist.forEach(function (itm) {
-          itm.title = rec.title;
-          itm.image = rec.image;
-        });
-      }
-    }
-    self.setPlayerFooter(rec, isDefault, self);
-    self.setPlayList(plist, rec, self);
-    if (!rec.currentTime &&
-      LocalStorageUtil.getItemFromLocalStorage(
-        "bookmarks",
-        "source",
-        rec.source
-      )
-    ) {
-      var item = LocalStorageUtil.getItemFromLocalStorage(
-        "bookmarks",
-        "source",
-        rec.source
-      );
-      rec.currentTime = item.currentTime;
-    }
-    $("ul.dropdown-menu li").addClass("small");
-    $("body").css("margin-bottom", $("footer").height());
-  }
+	selectPlayingRow($dtab, cast) {
+		if(!this.player.attributes.hasOwnProperty('src')) {
+			return;
+		}
+		const $p = $(this.player);
+		if($p.data('cast').podcastID !== cast.podcastID) {
+			return;
+		}
+		console.log(cast, this.player.src);
+		let pg = 0;
+		this.episodeTab.rows().every(function(ridx, tl, rl) {
+			if(this.data().mediaURL === $p.data('episode').mediaURL) {
+				//console.log($dtab.page, this, ridx, tl, rl);
+				this.select();
+				pg = Math.floor(rl / $dtab.page.len());
+				return;
+			}
+		});
+		console.log('current page', pg);
+		$dtab.page(pg).draw(false);
+	}
 
-  setControllers() {
-    var player = document.querySelector("#mplayer");
-    var $btn = $(this);
-    var sel = document.querySelector("#selPlist");
-    switch (this.id) {
-      case "btnPrev":
-        sel.selectedIndex =
-          sel.selectedIndex < sel.options.length - 1 ?
-          sel.selectedIndex + 1 :
-          sel.selectedIndex;
-        $(sel).trigger("change");
-        break;
-      case "btn30b":
-        player.currentTime -= player.currentTime < 30 ? 0 : 30;
-        break;
-      case "btn30f":
-        player.currentTime += 30;
-        break;
-      case "btnPP":
-        if (player.paused) {
-          player.play();
-        } else {
-          player.pause();
-        }
-        break;
-      case "btnNext":
-        sel.selectedIndex =
-          sel.selectedIndex > 0 ? sel.selectedIndex - 1 : sel.selectedIndex;
-        $(sel).trigger("change");
-        break;
-    }
-  }
+	async renderBookmarks($md) {
+		let bookmarks = QuickPlayer.getBookmarks();
+		console.log(bookmarks);
+		if(bookmarks == null) {
+			return;
+		}
+		let eps = [];
+		for(let k in bookmarks) {
+			eps.push(bookmarks[k]);
+		}
+		eps.sort((a,b) => b.recordedAt - a.recordedAt);
+		const modal_html = await QPHelper.loadHTML('components/modal_bookmarks.html');
+		$md.html(modal_html);
+		//console.log(eps);
+		let dtOptions = QPHelper.getDTOptionsTemplate();
+		const spOptions = {
+			"data": eps,
+			"sDom": '<"search-box"r>lftip',
+			"columns": QPHelper.columnsBookmark,
+			"order": [3, 'desc']
+		}
+		let $dtab = $('#tabEpisodes').DataTable({...dtOptions, ...spOptions});
+		$dtab.columns.adjust().responsive.recalc();
+		$dtab.on('click', 'tbody tr span[title=resume],tbody h5', (e) => {
+			const pdat = $dtab.row(e.currentTarget.closest('tr')).data();
+			const cast = this.casts.find(c => c.name == pdat.cast);
+			this.playEpisode(cast, pdat);
+			console.log(pdat);
+		});
+		$dtab.on('click', 'tbody tr i[title=delete]', (e) => {
+			const row = e.currentTarget.closest('tr');
+			QPHelper.deleteBookmark(QPHelper.storeKey, $dtab.row(row).data().mediaURL);
+			$dtab.row(row).remove().draw();
+		});
+		$('#spinner_modal').hide();
+		$md.modal('show');
+	}
 
-  addEvents(player, self) {
-    player.addEventListener("abort", self.recordBookmark);
-    player.addEventListener("error", self.recordBookmark);
-    player.addEventListener("pause", self.recordBookmark);
-    player.addEventListener("play", function () {
-      var icon = $("#btnPP i");
-      if (icon.hasClass("fa-play")) {
-        icon.removeClass("fa-play");
-        icon.addClass("fa-pause");
-      }
-    });
-    player.addEventListener("ended", self.goNext);
-  }
+	static getBookmarks() {
+		if(localStorage.getItem(QPHelper.storeKey)) {
+			return JSON.parse(localStorage.getItem(QPHelper.storeKey));
+		}
+		return null;
+	}
 
-  goNext() {
-    var sel = document.querySelector("#selPlist");
-    LocalStorageUtil.removeItemFromLocalStorage(
-      "bookmarks",
-      "source",
-      this.currentSrc
-    );
-    if (sel.selectedIndex) {
-      $("#btnNext").trigger("click");
-    }
-  }
+	playEpisode(cast, ep) {
+		if (this.player != null && !this.player.paused) {
+			this.player.pause();
+		}
+		//console.log(ep);
+		if (ep.mediaURL.match(/\.mp3/i) == null) {
+			if($("#player").hasClass('d-none')) {
+				$("#player").removeClass('d-none');
+			}
+		} else {
+			if (!$("#player").hasClass('d-none')) {
+				$("#player").addClass('d-none');
+			}
+		}
+		this.player.src = ep.mediaURL;
+		$('#ep-title').text(QPHelper.stringCut(ep.title, 30));
+		$('#ep-title').attr('title', ep.title);
+		$('#ep-image').unbind();
+		$('#ep-image').attr('src', cast.imageURL).on('click', async (e) => {
+			await this.renderCast(cast, this.$modalWindow);
+		});;
+		$('#ep-image').attr('title', cast.name);
+		this.player.setAttribute('src', ep.mediaURL);
+		this.seekResume();
+		if (!$('#playerToggle').hasClass('show')) {
+			$('#playerToggle').addClass('show');
+		}
+		$(this.player).data('cast', cast);
+		$(this.player).data('episode', ep);
+	}
 
-  recordBookmark() {
-    var icon = $("#btnPP i");
-    if (icon.hasClass("fa-pause")) {
-      icon.removeClass("fa-pause");
-      icon.addClass("fa-play");
-    }
-    var rec = {};
-    var footer = document.querySelector("footer");
-    rec.image = footer.querySelector("img").getAttribute("src");
-    rec.title = footer.querySelector("strong").textContent;
-    rec.episode = footer.querySelector("small").textContent;
-    rec.currentTime = this.currentTime;
-    rec.source = this.currentSrc;
-    var bookmarks = LocalStorageUtil.getItemArrayFromLocalStorage("bookmarks");
-    rec.recordedAt = new Date().getTime();
-    LocalStorageUtil.registerLocalStorage("bookmarks", "source", rec);
-  }
-
-  getPCListColDefs() {
-    return [{
-        data: "episode",
-        title: "episode",
-        render: function (val, typ, row, meta) {
-          return `<div class='media'>
-                    <div class='media-body' style='width:250px;overflow-x:auto'>
-                      <i class='fa fa-play-circle'></i>
-                      <strong class='mt-0' style=\"font-family: '${PageIndex.defaultFont()}', cursive;\">${val}</strong>
-                      <p>
-                      <small>${
-                        row.summary ? row.summary : ""
-                      }</small>
-                      </p>
-                    </div>
-                  </div>`;
-        }
-      },
-      {
-        data: "pubdate",
-        title: "posted at",
-        render: function (val, typ, row, meta) {
-          var dt = new Date(val);
-          dt.setHours(dt.getHours() + 9);
-          var strDT = dt.toISOString();
-          return `<i class='fa fa-download'></i> <small style=\"font-family: 'Passion One', cursive;\">${strDT.substring(
-            2,
-            10
-          )}<br/>${strDT.substring(11, 16)}</small>`;
-        }
-      }
-    ];
-  }
-
-  loadPodcastList() {
-    console.info("starting to load podcasts");
-    return new Promise((resolve, reject) => {
-      $.getJSON("json/podcastlist.json?q=" + new Date().getTime())
-        .then(dat => resolve(dat))
-        .catch(e => reject(e));
-    });
-  }
-
-  async loadTemplate(self, src) {
-    var objReq = await self.tie.loadFile(src);
-    if (objReq) {
-      var $body = $("body");
-      $body.empty();
-      $body.append(objReq.responseText);
-    }
-  }
+	seekResume() {
+		const p = document.querySelector('#player');
+		const bm = QuickPlayer.getBookmarks();
+		if(bm == null || !bm.hasOwnProperty(p.src)) {
+			return;
+		}
+		const r = bm[p.src];
+		//console.log('src', p.src, 'record', r);
+		if(bm != null &&  r != null) {
+			p.currentTime = r.currentTime;
+		}
+	}
 }
 
-var pgi = new PageIndex();
-pgi.init();
+$(document).ready(function() {
+	const qp = new QuickPlayer();
+	qp.init();
+	console.log(qp);
+});
